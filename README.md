@@ -1,4 +1,4 @@
-# @local/dsh-switch · 技能中心
+# @local/dsh-skills-center · 技能中心
 
 左侧栏入口，一个面板管三类东西：**Skill**、**MCP 服务器**、**提示词注入**。改动即时生效，不用回到对话里让助手代劳。
 
@@ -10,7 +10,7 @@
 |---|---|---|
 | Skill | 列出、搜索、编辑、启停、删除（**不在面板里新建**，Skill 由磁盘目录决定） | `<dshHome>/skills/<name>/SKILL.md`，`~/.agents/skills` 同样可写；项目与内置技能只读 |
 | MCP | 新建、编辑、删除服务器、启停；其他插件已启用的服务器只读列出 | 本 bundle 的 `dsh-switch-mcp` group 行，经 `configEditor` 写成 profile patch 覆盖 |
-| 提示词 | 新建、编辑、启停、删除，按顺序注入系统提示词 | `<dshHome>/dsh-switch/store.json` |
+| 提示词 | 新建、编辑、启停、删除，按顺序注入系统提示词 | `<dshHome>/dsh-skills-center/store.json` |
 
 `dshHome` 默认是 `~/.dsh`，跟随 `DSH_HOME`。
 
@@ -28,19 +28,19 @@
 
 ```
 harness:identity → deployment:persona-prefix → tool:bridge-browser → tool:dsh-vibedev
-→ mcp-resource-servers → ui:deliverable-file-references → [switch:prompt:<id>]
+→ mcp-resource-servers → ui:deliverable-file-references → [skills-center:prompt:<id>]
 → harness:source → app:web-surface → deployment:persona-suffix
 ```
 
 也就是落在工具说明、交付物引用之后，harness 来源与 persona 后缀之前。注入文本按字面保留，不做 `{{变量}}` 插值（`interpolate: false`），正文里的花括号或 `${...}` 不会让装配失败——这两点都用宿主自己的 `systemPrompt.assemble()` 实测过。
 
-它进的是**系统提示词**，不是对话消息：面板里启用后，下一个模型请求就会带上；关掉开关，段落立刻从装配结果里消失（`assemble()` 里不再有 `switch:prompt:*`）。面板行上的「注入中」标签就是宿主返回的 `applied` 字段。
+它进的是**系统提示词**，不是对话消息：面板里启用后，下一个模型请求就会带上；关掉开关，段落立刻从装配结果里消失（`assemble()` 里不再有 `skills-center:prompt:*`）。面板行上的「注入中」标签就是宿主返回的 `applied` 字段。
 
 ## 实现范式
 
 面板参照 cc-switch 的分层，而不是把功能塞进一个组件：
 
-1. **视图不碰后端。** 所有读取和写入都走一层 `call(action, payload)`，落到宿主 `POST /dsh-switch/rpc`。客户端不引用任何 Harness Client 包，只用 `react` 与主题变量。
+1. **视图不碰后端。** 所有读取和写入都走一层 `call(action, payload)`，落到宿主 `POST /dsh-skills-center/rpc`。客户端不引用任何 Harness Client 包，只用 `react` 与主题变量。
 2. **三类实体共用一副骨架。** 搜索框、计数条、列表行、全屏编辑层、确认弹窗、写锁各自只有一份实现，Skills / MCP / Prompts 只是同一套行组件换了字段。
 3. **写锁串行化。** `beginWrite` 用 ref + state 双写，避免连点两次都放行；每次写完后安静重载列表。
 4. **删除要二次确认。** 删除走确认弹窗，启停不需要。
@@ -48,7 +48,7 @@ harness:identity → deployment:persona-prefix → tool:bridge-browser → tool:
 
 ## 宿主 API
 
-`POST /dsh-switch/rpc`，body 为 `{action, payload}`，应答 `{ok, value}` 或 `{ok:false, error}`。路由只接受同源 loopback 请求。
+`POST /dsh-skills-center/rpc`，body 为 `{action, payload}`，应答 `{ok, value}` 或 `{ok:false, error}`。路由只接受同源 loopback 请求。
 
 | action | 说明 |
 |---|---|

@@ -1,8 +1,8 @@
 /**
- * @local/dsh-switch — Host half.
+ * @local/dsh-skills-center — Host half.
  *
  * The panel lives in the browser (./client.js) and owns no business logic of its
- * own: every action is one call to `POST /dsh-switch/rpc`, which lands here in
+ * own: every action is one call to `POST /dsh-skills-center/rpc`, which lands here in
  * `dispatch()`. That keeps the cc-switch shape — the view never talks to a
  * service directly, so the same operation is reachable from the page and from
  * anything else that can POST to this route.
@@ -16,7 +16,7 @@
  *             patch. `configEditor` persists the nested entry list as a profile
  *             override, so the Loader mounts each `@deepseek-ai/dsh-mcp-client`
  *             row normally and removals are real unloads.
- *   prompts — a JSON store at `<dshHome>/dsh-switch/store.json`; every enabled
+ *   prompts — a JSON store at `<dshHome>/dsh-skills-center/store.json`; every enabled
  *             entry is registered as a `ctx.systemPrompt.section()` and
  *             re-registered whenever the store changes.
  *
@@ -29,13 +29,13 @@ import { homedir } from 'node:os'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 
 /** This plugin's package name: the Loader row name and the client module id. */
-export const name = '@local/dsh-switch'
+export const name = '@local/dsh-skills-center'
 
 /** Only the web server is required; every other service is looked up softly. */
 export const inject = ['webServer']
 
 /** Route prefix owned by this plugin. */
-const PREFIX = '/dsh-switch'
+const PREFIX = '/dsh-skills-center'
 
 /** The group row that owns managed MCP servers (declared in cordis.patch.yml). */
 const GROUP_ID = 'dsh-switch-mcp'
@@ -67,7 +67,7 @@ function skillsRoot() {
 }
 
 function storePath() {
-  return join(dshHome(), 'dsh-switch', 'store.json')
+  return join(dshHome(), 'dsh-skills-center', 'store.json')
 }
 
 /** True when `path` is inside `root` (and not `root` itself). */
@@ -89,7 +89,7 @@ async function readStore() {
 }
 
 async function writeStore(store) {
-  const dir = join(dshHome(), 'dsh-switch')
+  const dir = join(dshHome(), 'dsh-skills-center')
   await mkdir(dir, { recursive: true })
   const target = storePath()
   // Write beside the target and rename: a crash mid-write must never leave a truncated store, because a store that
@@ -687,14 +687,14 @@ async function rebuildPrompts(ctx) {
     if (prompt.enabled === false) continue
     try {
       state.disposers.push(systemPrompt.section({
-        name: `switch:prompt:${prompt.id}`,
+        name: `skills-center:prompt:${prompt.id}`,
         order: PROMPT_ORDER,
         text: prompt.text,
         interpolate: false,
       }))
     } catch (error) {
       // A duplicate or invalid section must not take the whole plugin down.
-      console.warn(`[dsh-switch] prompt "${prompt.id}" was not registered: ${error?.message ?? error}`)
+      console.warn(`[dsh-skills-center] prompt "${prompt.id}" was not registered: ${error?.message ?? error}`)
     }
   }
 }
@@ -806,11 +806,11 @@ async function readBody(req, limit = 256 * 1024) {
 export function apply(ctx) {
   ctx.effect(() => () => {
     disposePrompts(ctx)
-  }, 'dsh-switch: prompt sections')
+  }, 'dsh-skills-center: prompt sections')
 
   // Register the stored prompt injections once the plugin is live.
   void syncPrompts(ctx).catch((error) => {
-    console.warn(`[dsh-switch] prompt injections were not restored: ${error?.message ?? error}`)
+    console.warn(`[dsh-skills-center] prompt injections were not restored: ${error?.message ?? error}`)
   })
 
   ctx.effect(() => ctx.webServer.register({
@@ -839,5 +839,5 @@ export function apply(ctx) {
         return json(500, { ok: false, error: String(error?.message ?? error) })
       }
     },
-  }), 'dsh-switch: /dsh-switch routes')
+  }), 'dsh-skills-center: /dsh-skills-center routes')
 }

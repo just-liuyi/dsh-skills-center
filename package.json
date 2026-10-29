@@ -1,6 +1,6 @@
 {
-  "name": "@local/dsh-switch",
-  "version": "1.4.0",
+  "name": "@local/dsh-skills-center",
+  "version": "1.5.0",
   "private": true,
   "type": "module",
   "description": "技能中心：左侧栏统一管理 Skill、MCP 与提示词注入 · Skills Center: manage skills, MCP servers and prompt injections from one sidebar entry",

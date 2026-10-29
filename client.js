@@ -1,15 +1,15 @@
-/*! @local/dsh-switch 1.4.0 client half: the 技能中心 sidebar entry and the management panel. */
+/*! @local/dsh-skills-center 1.5.0 client half: the 技能中心 sidebar entry and the management panel. */
 window.__ModuleLoader__.load({
-  id: '@local/dsh-switch',
+  id: '@local/dsh-skills-center',
   factory: (require) => {
     'use strict'
 
     var React = require('react')
     var h = React.createElement
 
-    var PANEL_ID = 'dsh-switch'
-    var LOCALE_NS = 'dshSwitch'
-    var API = '/dsh-switch/rpc'
+    var PANEL_ID = 'dsh-skills-center'
+    var LOCALE_NS = 'dshSkillsCenter'
+    var API = '/dsh-skills-center/rpc'
     var SKILL_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
     var SERVER_NAME = /^[A-Za-z0-9_-]{1,32}$/
     /** Which tabs can create a new entry. Skills are authored on disk; the panel only views, toggles and edits them. */
@@ -1371,7 +1371,7 @@ window.__ModuleLoader__.load({
     function apply(ctx) {
       ctx.effect(function () {
         return ctx.locale.register(LOCALE_NS, { zh: {}, en: {} })
-      }, 'dsh-switch: dictionaries')
+      }, 'dsh-skills-center: dictionaries')
 
       function BoundPanel(props) {
         return h(Panel, Object.assign({}, props, { ctx: ctx }))
@@ -1393,7 +1393,7 @@ window.__ModuleLoader__.load({
     }
 
     return {
-      name: '@local/dsh-switch',
+      name: '@local/dsh-skills-center',
       inject: ['slots', 'locale'],
       apply: apply,
     }
