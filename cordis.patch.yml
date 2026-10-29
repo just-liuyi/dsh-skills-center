@@ -1,0 +1,17 @@
+# @local/dsh-switch bundle patch.
+#
+# `dsh-switch` mounts the Host half (HTTP RPC for the panel) whose package name
+# is also the browser module id, so the client-modules scan resolves ./client.
+#
+# `dsh-switch-mcp` is a group row that owns every MCP server the panel manages.
+# Its `config` is a nested entry list: the panel adds and removes
+# `@deepseek-ai/dsh-mcp-client` rows there through `configEditor`, which persists
+# them as an override in the profile patch, so they survive restarts and
+# upgrades without the panel ever writing the profile's own files.
+- insert:
+    - id: dsh-switch
+      name: '@local/dsh-switch'
+    - id: dsh-switch-mcp
+      group: true
+      name: cordis:group
+      config: []
