@@ -733,6 +733,46 @@ export function createSourcesManager({ home, listLocal, fileOperations = {} }) {
     await cleanupPrivate(backup)
     return true
   }
+  /**
+   * Remove one source together with every skill it manages. Skills are quarantined
+   * first, then the records and the source are saved at once; any failure restores
+   * every quarantined directory before rethrowing.
+   */
+  async function removeSource(input) {
+    const state = await readState()
+    const at = state.sources.findIndex((source) => source.id === input.id)
+    if (at < 0) throw new Error('来源不存在')
+    const source = state.sources[at]
+    const names = Object.keys(state.installations).filter((name) => state.installations[name].sourceId === source.id)
+    const budget = renameBudget()
+    const quarantined = []
+    try {
+      for (const name of names) {
+        const record = state.installations[name]
+        await assertDirectory(record.directory)
+        const backup = await privateSlot('remove', await lstat(record.directory))
+        await move(record.directory, backup, `卸载技能 ${name}`, budget, true)
+        quarantined.push({ name, backup, directory: record.directory, instruction: join(record.directory, 'SKILL.md') })
+        delete state.installations[name]
+        delete state.invocations[join(record.directory, 'SKILL.md')]
+      }
+      state.sources.splice(at, 1)
+      await saveState(state, budget)
+    } catch (error) {
+      for (const item of quarantined.reverse()) {
+        try { await move(item.backup, item.directory, `恢复技能 ${item.name}`, budget, true) }
+        catch (restore) { appendFailure(error, `恢复失败，技能备份保留在 ${item.backup}`, restore) }
+      }
+      throw error
+    }
+    // Deleting succeeded; a leftover quarantine is reported without hiding the result.
+    const warnings = []
+    for (const item of quarantined) {
+      try { await cleanupPrivate(item.backup) }
+      catch (error) { warnings.push(String(error?.message || error)) }
+    }
+    return { id: source.id, label: source.label || source.id, removed: names, ...(warnings.length ? { warnings } : {}) }
+  }
   async function setInvocation(input, row) {
     const state = await readState()
     const record = own(state.installations, row.name) && state.installations[row.name]
@@ -759,5 +799,5 @@ export function createSourcesManager({ home, listLocal, fileOperations = {} }) {
       if (own(state.installations, name)) throw new Error('在线来源技能正文只读，请更新来源或另存为本地技能')
     }
   }
-  return { decorate, search, preview, add, install, refresh, check: refresh, update, remove, setInvocation, assertEditable }
+  return { decorate, search, preview, add, install, refresh, check: refresh, update, remove, removeSource, setInvocation, assertEditable }
 }

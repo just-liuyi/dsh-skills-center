@@ -769,6 +769,7 @@ const ACTIONS = {
   'source.install': (ctx, input) => sourcesManager(ctx).install(input),
   'source.refresh': (ctx, input) => sourcesManager(ctx).refresh(input),
   'source.check': (ctx, input) => sourcesManager(ctx).check(input),
+  'source.remove': (ctx, input) => sourcesManager(ctx).removeSource(input),
   'skill.update': (ctx, input) => sourcesManager(ctx).update(input),
   'tools.list': listTools,
   'mcp.save': saveMcp,

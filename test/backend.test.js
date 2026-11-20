@@ -703,3 +703,49 @@ test('simultaneous direct adds serialize once and return the existing disabled s
   assert.deepEqual(results.map((result) => [result.added, result.existing, result.enabled]), [[true, false, false], [false, true, false]])
   assert.equal((await env.rpc('catalog')).skills.rows.length, 1)
 })
+
+test('removing a source uninstalls every skill it manages and forgets the source', async (t) => {
+  const env = await environment(t)
+  await env.rpc('source.install', { url: 'acme/skills', names: ['alpha', 'beta'] })
+  const source = (await env.rpc('catalog')).skills.sources[0]
+  const normalFetch = globalThis.fetch
+  globalThis.fetch = async () => { throw new Error('removing a source must not contact the network') }
+  try {
+    const removed = await env.rpc('source.remove', { id: source.id })
+    assert.deepEqual([...removed.removed].sort(), ['alpha', 'beta'])
+    assert.equal(removed.label, 'acme/skills')
+  } finally { globalThis.fetch = normalFetch }
+  const catalog = await env.rpc('catalog')
+  assert.deepEqual(catalog.skills.rows, [])
+  assert.deepEqual(catalog.skills.sources, [])
+  const state = JSON.parse(await readFile(env.statePath, 'utf8'))
+  assert.deepEqual(state.installations, {})
+  assert.deepEqual(state.sources, [])
+  assert.deepEqual(await readdir(env.root), [])
+  assert.deepEqual(await readdir(join(dirname(env.statePath), 'staging')), [])
+  await env.error('source.remove', { id: source.id }, /来源不存在/)
+})
+
+test('a failed source removal restores every quarantined skill and keeps the source record', async (t) => {
+  const env = await environment(t)
+  const manager = directManager(env, { wait: async () => {} })
+  await manager.install({ url: 'acme/skills', names: ['alpha', 'beta'] })
+  const source = JSON.parse(await readFile(env.statePath, 'utf8')).sources[0]
+  let failed = false
+  const failing = directManager(env, {
+    wait: async () => {},
+    rename: async (from, to) => {
+      if (!failed && to === env.statePath) { failed = true; throw fileError('EIO') }
+      return nativeRename(from, to)
+    },
+  })
+  await assert.rejects(failing.removeSource({ id: source.id }), { code: 'EIO' })
+  assert.deepEqual((await readdir(env.root)).sort(), ['alpha', 'beta'], 'quarantined skills are restored')
+  const state = JSON.parse(await readFile(env.statePath, 'utf8'))
+  assert.equal(state.sources[0].id, source.id)
+  assert.deepEqual(Object.keys(state.installations).sort(), ['alpha', 'beta'])
+  assert.deepEqual(await readdir(join(dirname(env.statePath), 'staging')), [])
+  const removed = await manager.removeSource({ id: source.id })
+  assert.deepEqual([...removed.removed].sort(), ['alpha', 'beta'])
+  assert.deepEqual(await readdir(env.root), [])
+})

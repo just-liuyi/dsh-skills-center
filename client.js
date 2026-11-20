@@ -1,4 +1,4 @@
-/*! @local/dsh-skills-center 1.8.1 client half: the 技能中心 sidebar entry and the management panel. */
+/*! @local/dsh-skills-center 1.8.4 client half: the 技能中心 sidebar entry and the management panel. */
 window.__ModuleLoader__.load({
   id: '@local/dsh-skills-center',
   factory: (require) => {
@@ -116,7 +116,7 @@ window.__ModuleLoader__.load({
           searchEmpty: '没有找到相关技能', searchEmptyHint: '换一个关键词，或切换到「从链接添加」。', searchError: '搜索未完成，请检查网络后重试。',
           results: function (n) { return n + ' 个搜索结果' }, installs: function (n) { return n.toLocaleString('zh-CN') + ' 次安装' },
           resultPreview: '添加', resultInstalled: '已添加', unsupportedResult: '暂不支持此来源',
-          adding: '正在添加技能…', addedDisabled: '已添加，默认停用，请在列表开启。', alreadyAdded: '已添加，现有启停状态保持不变。', returnToList: '回到技能列表', addFromSource: '添加此来源技能',
+          adding: '正在添加技能…', addedDisabled: '已添加，默认停用，请在列表开启。', alreadyAdded: '已添加，现有启停状态保持不变。', returnToList: '回到技能列表',
           backSearch: '返回搜索结果', backLink: '更换链接', previewFilter: '筛选此来源的技能', visibleSelect: '全选当前结果',
           noPreviewMatches: '没有匹配的技能', clearPreviewFilter: '清除筛选', selectedHint: '新增技能默认停用，添加后请在列表手动开启；已存在技能的状态不变。',
           linkNote: '粘贴 GitHub 或 skills.sh 链接，先预览再安装。', previewTitle: '确认技能', previewCount: function (n) { return '已解析 ' + n + ' 个技能' },
@@ -135,9 +135,10 @@ window.__ModuleLoader__.load({
           conflictHint: '已有同名技能。仅内容一致时可勾选上方的关联选项后添加。',
           noSkills: '这个来源没有可展示的 Skill。', noneSelected: '选择至少一个技能后安装。',
           refresh: '刷新来源', refreshing: '正在刷新来源…', refreshed: '来源列表已刷新，已安装内容未更新',
-          check: '检查更新', checking: '正在检查更新…', checked: '更新检查完成',
           update: '更新', updating: '正在更新技能…', updated: '技能已更新', uninstall: '卸载',
           uninstallTitle: '卸载在线 Skill', uninstallBody: function (n) { return '将卸载「' + n + '」的本地内容，仍可从来源重新安装。' },
+          removeSource: '删除来源', removeSourceTitle: '删除在线来源',
+          removeSourceBody: function (label, count) { return '将删除来源「' + label + '」及其下 ' + count + ' 个技能，此操作不可撤销。' },
           partialHint: '按需导入：当前仅管理已解析的技能，可搜索或通过仓库链接添加其他技能。',
           expandAll: '全部展开', collapseAll: '全部折叠', expandSource: '展开来源', collapseSource: '折叠来源',
           summary: function (installed, total, on) { return '已管理 ' + installed + ' 项 · 已启用 ' + on },
@@ -250,7 +251,7 @@ window.__ModuleLoader__.load({
           searchEmpty: 'No matching skills', searchEmptyHint: 'Try another keyword, or switch to “Add from link”.', searchError: 'Search failed. Check your connection and try again.',
           results: function (n) { return n + ' search results' }, installs: function (n) { return n.toLocaleString('en-US') + ' installs' },
           resultPreview: 'Add', resultInstalled: 'Added', unsupportedResult: 'Source not supported yet',
-          adding: 'Adding skill…', addedDisabled: 'Added and disabled by default. Enable it in the skill list.', alreadyAdded: 'Already added. Its enabled state is unchanged.', returnToList: 'Back to skill list', addFromSource: 'Add skills from source',
+          adding: 'Adding skill…', addedDisabled: 'Added and disabled by default. Enable it in the skill list.', alreadyAdded: 'Already added. Its enabled state is unchanged.', returnToList: 'Back to skill list',
           backSearch: 'Back to results', backLink: 'Change link', previewFilter: 'Filter skills in this source', visibleSelect: 'Select visible',
           noPreviewMatches: 'No matching skills', clearPreviewFilter: 'Clear filter', selectedHint: 'New skills stay disabled until you enable them in the list. Existing skills keep their enabled state.',
           linkNote: 'Paste a GitHub or skills.sh link, then review before installing.', previewTitle: 'Review skills', previewCount: function (n) { return n + ' skills ready to review' },
@@ -269,9 +270,10 @@ window.__ModuleLoader__.load({
           conflictHint: 'A skill with this name exists. Enable association above only if its content is identical.',
           noSkills: 'No skills are available in this source.', noneSelected: 'Select at least one skill to install.',
           refresh: 'Refresh source', refreshing: 'Refreshing source…', refreshed: 'Source list refreshed; installed content was not updated',
-          check: 'Check updates', checking: 'Checking updates…', checked: 'Update check completed',
           update: 'Update', updating: 'Updating skill…', updated: 'Skill updated', uninstall: 'Uninstall',
           uninstallTitle: 'Uninstall online skill', uninstallBody: function (n) { return 'The local content of “' + n + '” will be uninstalled. You can install it again from its source.' },
+          removeSource: 'Delete source', removeSourceTitle: 'Delete online source',
+          removeSourceBody: function (label, count) { return '“' + label + '” and its ' + count + ' skills will be deleted. This cannot be undone.' },
           partialHint: 'Imported on demand: only resolved skills are managed here. Search or use the repository link to add other skills.',
           expandAll: 'Expand all', collapseAll: 'Collapse all', expandSource: 'Expand source', collapseSource: 'Collapse source',
           summary: function (installed, total, on) { return installed + ' managed · ' + on + ' enabled' },
@@ -1075,15 +1077,15 @@ window.__ModuleLoader__.load({
         if (outcome === 'ok') { setSourceDraft(null); setTab('skills'); setQuery(''); setFilter('all'); notify('ok', text.online.installedDone) }
         else if (outcome === 'busy') patchSource({ error: text.busyWrite })
       }
-      async function sourceAction(source, action) {
+      /** One action per source: refreshing re-reads upstream and updates the source record. */
+      async function sourceAction(source) {
         if (writing) return
         var key = 'source:' + source.id
-        var label = action === 'source.refresh' ? text.online.refreshing : text.online.checking
         setPending(function (p) { return Object.assign({}, p, { [key]: true }) })
-        setSourceStatus(function (p) { return Object.assign({}, p, { [source.id]: { pending: true, text: label } }) })
-        setOperation(label)
+        setSourceStatus(function (p) { return Object.assign({}, p, { [source.id]: { pending: true, text: text.online.refreshing } }) })
+        setOperation(text.online.refreshing)
         var outcome = await withWrite(async function () {
-          try { await call(action, { id: source.id }) }
+          try { await call('source.refresh', { id: source.id }) }
           catch (error) {
             setSourceStatus(function (p) { return Object.assign({}, p, { [source.id]: { error: true, text: String(error.message || error) } }) })
             throw error
@@ -1093,9 +1095,8 @@ window.__ModuleLoader__.load({
         setOperation(null)
         setPending(function (p) { var n = Object.assign({}, p); delete n[key]; return n })
         if (outcome === 'ok') {
-          var done = action === 'source.refresh' ? text.online.refreshed : text.online.checked
-          setSourceStatus(function (p) { return Object.assign({}, p, { [source.id]: { text: done } }) })
-          notify('ok', done)
+          setSourceStatus(function (p) { return Object.assign({}, p, { [source.id]: { text: text.online.refreshed } }) })
+          notify('ok', text.online.refreshed)
         } else if (outcome === 'busy') {
           setSourceStatus(function (p) { return Object.assign({}, p, { [source.id]: { error: true, text: text.busyWrite } }) })
         }
@@ -1270,7 +1271,8 @@ window.__ModuleLoader__.load({
         if (!cur) return
         setSaving(true)
         var outcome = await withWrite(async function () {
-          if (cur.kind === 'skills') await call('skill.remove', { name: cur.row.name })
+          if (cur.kind === 'source') await call('source.remove', { id: cur.id })
+          else if (cur.kind === 'skills') await call('skill.remove', { name: cur.row.name })
           else if (cur.kind === 'mcp') await call('mcp.remove', { id: cur.row.id })
           else await call('prompt.remove', { id: cur.row.id })
         })
@@ -1290,6 +1292,12 @@ window.__ModuleLoader__.load({
       function askRemove(kind, row) {
         var label = kind === 'skills' ? row.name : kind === 'mcp' ? (row.serverName || row.id) : (row.title || row.id)
         setConfirm({ kind: kind, row: row, label: label })
+      }
+
+      /** Deleting a source deletes every skill it manages, so the count is part of the confirmation. */
+      function askRemoveSource(source) {
+        var count = source.skills.filter(function (row) { return row.installed !== false }).length
+        setConfirm({ kind: 'source', id: source.id, label: source.label || source.id, count: count })
       }
 
       /* rows */
@@ -1390,11 +1398,16 @@ window.__ModuleLoader__.load({
         })
       }
 
+      /** Online sources start collapsed: an unknown id means closed until the user expands it. */
+      function sourceClosed(source) {
+        return collapsed[source.id] !== false
+      }
+
       function renderSource(source) {
         var installed = source.skills.filter(function (row) { return row.installed !== false })
         var on = installed.filter(function (row) { return isOn('skills', row) }).length
         var status = sourceStatus[source.id]
-        var closed = Boolean(collapsed[source.id])
+        var closed = sourceClosed(source)
         var contentId = 'sw-source-content-' + source.id
         return h('section', { key: source.id, className: 'sw-source' },
           h('div', { className: 'sw-source-head' },
@@ -1405,9 +1418,9 @@ window.__ModuleLoader__.load({
               h('span', { className: 'sw-source-title' }, source.label || source.id),
               h('span', { className: 'sw-source-summary' }, text.online.summary(installed.length, source.skills.length, on))),
             h('div', { className: 'sw-source-actions' },
-              h(Button, { icon: 'plus', disabled: writing, onClick: function () { openSource(source) } }, text.online.addFromSource),
-              h(Button, { disabled: writing, onClick: function () { sourceAction(source, 'source.check') } }, text.online.check),
-              h(IconButton, { icon: 'refresh', label: text.online.refresh, disabled: writing, onClick: function () { sourceAction(source, 'source.refresh') } }))),
+              h(Button, { className: 'sw-source-action', disabled: writing, onClick: function () { sourceAction(source) } }, text.online.refresh),
+              h(Button, { className: 'sw-source-action is-danger', disabled: writing,
+                onClick: function () { askRemoveSource(source) } }, text.online.removeSource))),
           h('div', { className: 'sw-source-meta' },
             h('a', { href: source.url, target: '_blank', rel: 'noopener noreferrer', title: text.online.openSource }, source.url),
             source.ref ? h(Tag, { tone: 'quiet' }, source.ref) : null,
@@ -1478,9 +1491,9 @@ window.__ModuleLoader__.load({
             h('div', { className: 'sw-skill-section-head' },
               h('h2', { className: 'sw-skill-section-title' }, text.online.remote),
               h('div', { className: 'sw-skill-section-actions', role: 'group', 'aria-label': text.online.remote },
-                h(Button, { disabled: !onlineGroups.some(function (source) { return Boolean(collapsed[source.id]) }),
+                h(Button, { disabled: !onlineGroups.some(sourceClosed),
                   onClick: function () { setAllSourcesCollapsed(false) } }, text.online.expandAll),
-                h(Button, { disabled: !onlineGroups.some(function (source) { return !collapsed[source.id] }),
+                h(Button, { disabled: !onlineGroups.some(function (source) { return !sourceClosed(source) }),
                   onClick: function () { setAllSourcesCollapsed(true) } }, text.online.collapseAll))),
             h('div', { className: 'sw-groups' }, visibleSources.map(renderSource))) : null)
       } else {
@@ -1758,12 +1771,16 @@ window.__ModuleLoader__.load({
         drawer, sourceDrawer, toolsDrawer,
 
         confirm ? h(Dialog, {
-          title: confirm.kind === 'skills' && confirm.row.origin === 'online' ? text.online.uninstallTitle : text.confirmTitle[confirm.kind],
-          body: confirm.kind === 'skills' && confirm.row.origin === 'online' ? text.online.uninstallBody(confirm.label) : text.confirmBody[confirm.kind](confirm.label),
+          title: confirm.kind === 'source' ? text.online.removeSourceTitle
+            : confirm.kind === 'skills' && confirm.row.origin === 'online' ? text.online.uninstallTitle : text.confirmTitle[confirm.kind],
+          body: confirm.kind === 'source' ? text.online.removeSourceBody(confirm.label, confirm.count)
+            : confirm.kind === 'skills' && confirm.row.origin === 'online' ? text.online.uninstallBody(confirm.label) : text.confirmBody[confirm.kind](confirm.label),
           onClose: function () { if (!saving) setConfirm(null) },
           footer: [
             h(Button, { key: 'no', disabled: saving, onClick: function () { setConfirm(null) } }, text.cancel),
-            h(Button, { key: 'yes', variant: 'danger', disabled: saving, onClick: remove }, saving ? text.saving : confirm.kind === 'skills' && confirm.row.origin === 'online' ? text.online.uninstall : text.remove),
+            h(Button, { key: 'yes', variant: 'danger', disabled: saving, onClick: remove }, saving ? text.saving
+              : confirm.kind === 'source' ? text.online.removeSource
+                : confirm.kind === 'skills' && confirm.row.origin === 'online' ? text.online.uninstall : text.remove),
           ],
         }) : null,
 
@@ -1968,6 +1985,9 @@ window.__ModuleLoader__.load({
       '.sw-source-title{font-size:14px;font-weight:500;overflow-wrap:anywhere;}',
       '.sw-source-summary{font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary);}',
       '.sw-source-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px;}',
+      '.sw-source-actions>.sw-btn{height:28px;padding:0 10px;font-size:12px;}',
+      '.sw-source-actions>.sw-btn.is-danger{border-color:var(--dsw-alias-border-l3);color:var(--dsw-alias-state-error-primary);}',
+      '.sw-source-actions>.sw-btn.is-danger:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover-danger,var(--dsw-alias-interactive-bg-hover));}',
       '.sw-source-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary);min-width:0;}',
       '.sw-source-meta a{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;text-decoration:none;}',
       '.sw-source-meta a:hover{text-decoration:underline;}',
