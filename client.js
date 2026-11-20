@@ -1,4 +1,4 @@
-/*! @local/dsh-skills-center 1.5.0 client half: the 技能中心 sidebar entry and the management panel. */
+/*! @local/dsh-skills-center 1.8.1 client half: the 技能中心 sidebar entry and the management panel. */
 window.__ModuleLoader__.load({
   id: '@local/dsh-skills-center',
   factory: (require) => {
@@ -12,8 +12,8 @@ window.__ModuleLoader__.load({
     var API = '/dsh-skills-center/rpc'
     var SKILL_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
     var SERVER_NAME = /^[A-Za-z0-9_-]{1,32}$/
-    /** Which tabs can create a new entry. Skills are authored on disk; the panel only views, toggles and edits them. */
-    var CREATABLE = { skills: false, mcp: true, prompts: true }
+    /** Local skill creation stays on disk. The Skills toolbar adds online sources. */
+    var CREATABLE = { skills: false, mcp: true, prompts: true, tools: false }
 
     /* ── text ──────────────────────────────────────────────────────────────────────────────────────────────── */
 
@@ -21,7 +21,7 @@ window.__ModuleLoader__.load({
       zh: {
         title: '技能中心',
         intro: '统一管理 Skill、MCP 服务器与提示词注入，改动即时生效。',
-        tabs: { skills: 'Skill', mcp: 'MCP', prompts: '提示词' },
+        tabs: { skills: 'Skill', mcp: 'MCP', prompts: '提示词', tools: 'Tools' },
         search: '搜索',
         searchHint: '按 / 聚焦搜索',
         refresh: '刷新',
@@ -31,7 +31,7 @@ window.__ModuleLoader__.load({
         groups: {
           skillsMine: '我的 Skill', skillsProject: '当前项目', skillsOther: '内置与插件',
           mcpManaged: '由技能中心管理', mcpExternal: '其他插件',
-          prompts: '注入段落',
+          prompts: '注入段落', tools: '系统工具',
         },
         groupHint: {
           skillsMine: '位于 ~/.dsh/skills 或 ~/.agents/skills，可编辑、启停与删除。',
@@ -39,7 +39,7 @@ window.__ModuleLoader__.load({
           skillsOther: '由内置包或其他插件提供，仅在此展示。',
           mcpManaged: '作为独立条目挂载，工具名为 mcp__<服务器名>__<工具名>。',
           mcpExternal: '其他插件已启用的服务器，只能在此启停。',
-          prompts: '每条启用的提示词作为独立段落，位于工具说明之后、结构化输出之前。',
+          prompts: '每条启用的提示词作为独立段落，位于工具说明之后、结构化输出之前。', tools: '内置包和插件提供的工具，仅供查看。',
         },
         stats: function (total, on) { return total + ' 项 · ' + on + ' 项生效' },
         edit: '编辑', view: '查看', remove: '删除', save: '保存', saving: '保存中…', cancel: '取消', close: '关闭',
@@ -50,11 +50,11 @@ window.__ModuleLoader__.load({
         loading: '正在读取…',
         loadFailed: '读取失败',
         retry: '重试',
-        emptyTitle: { skills: '暂无 Skill', mcp: '还没有 MCP 服务器', prompts: '还没有提示词' },
+        emptyTitle: { skills: '暂无 Skill', mcp: '还没有 MCP 服务器', prompts: '还没有提示词', tools: '暂无工具' },
         empty: {
           skills: '项目与内置 Skill 会自动出现在这里；自己的 Skill 放在 ~/.dsh/skills 或 ~/.agents/skills，面板里可以查看、启停和编辑。',
           mcp: '添加后，它的工具会直接出现在模型的工具列表里。点右上角「新建 MCP 服务器」，或按 N。',
-          prompts: '它会随每次请求注入系统提示词。点右上角「新建提示词」，或按 N 新建一条。',
+          prompts: '它会随每次请求注入系统提示词。点右上角「新建提示词」，或按 N 新建一条。', tools: '系统工具由内置包和插件提供，这里仅展示。',
         },
         emptySearch: '没有匹配的条目',
         emptySearchText: '换个关键字，或清除筛选条件。',
@@ -108,18 +108,54 @@ window.__ModuleLoader__.load({
         toast: {
           saved: '已保存', created: '已创建', removed: '已删除', enabled: '已启用', disabled: '已停用',
         },
+        online: {
+          local: '本地安装', remote: '在线安装', scope: '安装来源', add: '添加技能', addHint: '添加技能（N）',
+          searchMode: '搜索技能', linkMode: '从链接添加', searchLabel: '搜索 skills.sh', searchPlaceholder: '例如 Cloudflare、React、代码审查',
+          searchNote: '从 skills.sh 搜索并直接添加技能，新增默认停用，回到列表后手动开启。', searchSubmit: '搜索', searching: '正在搜索 skills.sh…',
+          searchStart: '搜索你需要的技能', searchStartHint: '输入产品、框架或任务关键词，按 Enter 或点击搜索。',
+          searchEmpty: '没有找到相关技能', searchEmptyHint: '换一个关键词，或切换到「从链接添加」。', searchError: '搜索未完成，请检查网络后重试。',
+          results: function (n) { return n + ' 个搜索结果' }, installs: function (n) { return n.toLocaleString('zh-CN') + ' 次安装' },
+          resultPreview: '添加', resultInstalled: '已添加', unsupportedResult: '暂不支持此来源',
+          adding: '正在添加技能…', addedDisabled: '已添加，默认停用，请在列表开启。', alreadyAdded: '已添加，现有启停状态保持不变。', returnToList: '回到技能列表', addFromSource: '添加此来源技能',
+          backSearch: '返回搜索结果', backLink: '更换链接', previewFilter: '筛选此来源的技能', visibleSelect: '全选当前结果',
+          noPreviewMatches: '没有匹配的技能', clearPreviewFilter: '清除筛选', selectedHint: '新增技能默认停用，添加后请在列表手动开启；已存在技能的状态不变。',
+          linkNote: '粘贴 GitHub 或 skills.sh 链接，先预览再安装。', previewTitle: '确认技能', previewCount: function (n) { return '已解析 ' + n + ' 个技能' },
+          installedPreviewHint: '已安装的技能可在此更新；安装按钮只处理勾选的未安装技能。',
+          localEmpty: '点击右上角「添加技能」，搜索 skills.sh 或粘贴技能链接。自己的技能也可以放入用户技能目录。',
+          searchRequired: '先输入搜索关键词。', previewFailed: '未能读取技能，请重试或更换链接。',
+          note: '按在线来源管理 Skill；安装后保存在本地，可独立启停和更新。',
+          emptyTitle: '还没有在线来源', empty: '点击右上角「添加技能」，搜索 skills.sh 或从 GitHub、skills.sh 链接选择安装。',
+          url: '技能或仓库链接', urlHint: '支持 GitHub、skills.sh 技能详情链接，以及 owner/repo 简写。',
+          urlError: '请输入 GitHub、skills.sh 技能详情链接或 owner/repo。', preview: '预览技能', previewing: '正在读取技能…',
+          previewNote: '选择要安装的 Skill。默认安装到用户范围，当前项目技能仍只读。',
+          available: '未安装', installed: '已安装', conflict: '本地已存在', modified: '本地已修改', updateAvailable: '有更新',
+          install: '安装', installSelected: '添加所选', installing: '正在添加所选技能…', installedDone: '技能已添加，新增默认停用，请在列表开启。',
+          selected: function (n) { return '已选择 ' + n + ' 项' }, selectAll: '选择可安装项', clearSelection: '清空选择',
+          associate: '关联内容一致的本地技能', associateHint: '明确允许为已有技能建立来源关联；内容有差异时会拒绝，不会覆盖。',
+          conflictHint: '已有同名技能。仅内容一致时可勾选上方的关联选项后添加。',
+          noSkills: '这个来源没有可展示的 Skill。', noneSelected: '选择至少一个技能后安装。',
+          refresh: '刷新来源', refreshing: '正在刷新来源…', refreshed: '来源列表已刷新，已安装内容未更新',
+          check: '检查更新', checking: '正在检查更新…', checked: '更新检查完成',
+          update: '更新', updating: '正在更新技能…', updated: '技能已更新', uninstall: '卸载',
+          uninstallTitle: '卸载在线 Skill', uninstallBody: function (n) { return '将卸载「' + n + '」的本地内容，仍可从来源重新安装。' },
+          partialHint: '按需导入：当前仅管理已解析的技能，可搜索或通过仓库链接添加其他技能。',
+          expandAll: '全部展开', collapseAll: '全部折叠', expandSource: '展开来源', collapseSource: '折叠来源',
+          summary: function (installed, total, on) { return '已管理 ' + installed + ' 项 · 已启用 ' + on },
+          source: '来源', openSource: '打开 GitHub 来源', version: '版本', managedNote: '此技能由在线来源管理。内容仅供查看，启停和更新请在列表中操作。',
+          busy: '任务进行中，请等待完成后关闭。', inspect: '查看并选择安装', notChecked: '尚未检查更新', upstreamRemoved: '上游已移除',
+        },
         busyWrite: '上一次修改还在保存，请稍后再试。',
         reloadHint: '宿主会重新加载该服务器，现有连接可能短暂中断。',
         unsupported: {
           mcp: '当前环境没有配置编辑器，MCP 只能查看。',
           prompts: '当前环境没有系统提示词服务，提示词只会保存、不会注入。',
-          skills: '当前配置没有 Skill 服务。',
+          skills: '当前配置没有 Skill 服务。', tools: '当前环境没有工具目录。',
         },
       },
       en: {
         title: 'Skills Center',
         intro: 'Manage skills, MCP servers and prompt injections in one place. Changes apply immediately.',
-        tabs: { skills: 'Skills', mcp: 'MCP', prompts: 'Prompts' },
+        tabs: { skills: 'Skills', mcp: 'MCP', prompts: 'Prompts', tools: 'Tools' },
         search: 'Search',
         searchHint: 'Press / to search',
         refresh: 'Refresh',
@@ -129,7 +165,7 @@ window.__ModuleLoader__.load({
         groups: {
           skillsMine: 'My skills', skillsProject: 'This project', skillsOther: 'Bundled and plugins',
           mcpManaged: 'Managed by Skills Center', mcpExternal: 'Other plugins',
-          prompts: 'Injected sections',
+          prompts: 'Injected sections', tools: 'System tools',
         },
         groupHint: {
           skillsMine: 'Under ~/.dsh/skills or ~/.agents/skills: editable, switchable and deletable.',
@@ -137,7 +173,7 @@ window.__ModuleLoader__.load({
           skillsOther: 'Provided by bundled packages or other plugins; shown here only.',
           mcpManaged: 'Mounted as their own entries; tools appear as mcp__<server>__<tool>.',
           mcpExternal: 'Servers other plugins enabled; only their switch is available here.',
-          prompts: 'Each enabled prompt is its own section, after tool guidance and before structured output.',
+          prompts: 'Each enabled prompt is its own section, after tool guidance and before structured output.', tools: 'Read-only tools provided by built-in packages and plugins.',
         },
         stats: function (total, on) { return total + ' total · ' + on + ' active' },
         edit: 'Edit', view: 'View', remove: 'Delete', save: 'Save', saving: 'Saving…', cancel: 'Cancel', close: 'Close',
@@ -148,11 +184,11 @@ window.__ModuleLoader__.load({
         loading: 'Loading…',
         loadFailed: 'Could not load',
         retry: 'Retry',
-        emptyTitle: { skills: 'No skills here', mcp: 'No MCP servers yet', prompts: 'No prompts yet' },
+        emptyTitle: { skills: 'No skills here', mcp: 'No MCP servers yet', prompts: 'No prompts yet', tools: 'No tools available' },
         empty: {
           skills: 'Project and bundled skills appear here automatically; your own live in ~/.dsh/skills or ~/.agents/skills, where this panel can view, toggle and edit them.',
           mcp: 'Its tools appear directly in the model\'s tool list. Use “New MCP server” in the top-right corner, or press N.',
-          prompts: 'It is injected into every request\'s system prompt. Use “New prompt” in the top-right corner, or press N.',
+          prompts: 'It is injected into every request\'s system prompt. Use “New prompt” in the top-right corner, or press N.', tools: 'System tools are shown here read-only.',
         },
         emptySearch: 'No matching entries',
         emptySearchText: 'Try another keyword, or clear the filters.',
@@ -206,12 +242,48 @@ window.__ModuleLoader__.load({
         toast: {
           saved: 'Saved', created: 'Created', removed: 'Deleted', enabled: 'Enabled', disabled: 'Disabled',
         },
+        online: {
+          local: 'Local installs', remote: 'Online installs', scope: 'Installation source', add: 'Add skill', addHint: 'Add skill (N)',
+          searchMode: 'Search skills', linkMode: 'Add from link', searchLabel: 'Search skills.sh', searchPlaceholder: 'For example Cloudflare, React, code review',
+          searchNote: 'Search skills.sh and add skills directly. New skills stay disabled until you enable them in the list.', searchSubmit: 'Search', searching: 'Searching skills.sh…',
+          searchStart: 'Find a skill for your task', searchStartHint: 'Enter a product, framework or task, then press Enter or Search.',
+          searchEmpty: 'No matching skills', searchEmptyHint: 'Try another keyword, or switch to “Add from link”.', searchError: 'Search failed. Check your connection and try again.',
+          results: function (n) { return n + ' search results' }, installs: function (n) { return n.toLocaleString('en-US') + ' installs' },
+          resultPreview: 'Add', resultInstalled: 'Added', unsupportedResult: 'Source not supported yet',
+          adding: 'Adding skill…', addedDisabled: 'Added and disabled by default. Enable it in the skill list.', alreadyAdded: 'Already added. Its enabled state is unchanged.', returnToList: 'Back to skill list', addFromSource: 'Add skills from source',
+          backSearch: 'Back to results', backLink: 'Change link', previewFilter: 'Filter skills in this source', visibleSelect: 'Select visible',
+          noPreviewMatches: 'No matching skills', clearPreviewFilter: 'Clear filter', selectedHint: 'New skills stay disabled until you enable them in the list. Existing skills keep their enabled state.',
+          linkNote: 'Paste a GitHub or skills.sh link, then review before installing.', previewTitle: 'Review skills', previewCount: function (n) { return n + ' skills ready to review' },
+          installedPreviewHint: 'Installed skills can be updated here. Install only handles selected, uninstalled skills.',
+          localEmpty: 'Use “Add skill” in the top-right to search skills.sh or paste a link. You can also author skills in your user skill directory.',
+          searchRequired: 'Enter a search keyword first.', previewFailed: 'Could not read this skill. Retry or use another link.',
+          note: 'Manage skills by online source. Installed skills are stored locally and can be toggled or updated individually.',
+          emptyTitle: 'No online sources yet', empty: 'Use “Add skill” in the top-right to search skills.sh or install from a GitHub or skills.sh link.',
+          url: 'Skill or repository link', urlHint: 'Accepts GitHub and skills.sh skill links, as well as owner/repo shorthand.',
+          urlError: 'Enter a GitHub or skills.sh skill link, or owner/repo.', preview: 'Preview skills', previewing: 'Reading skills…',
+          previewNote: 'Choose skills to install for your user. Project skills remain read-only.',
+          available: 'Not installed', installed: 'Installed', conflict: 'Already exists locally', modified: 'Locally modified', updateAvailable: 'Update available',
+          install: 'Install', installSelected: 'Add selected', installing: 'Adding selected skills…', installedDone: 'Skills added. New skills stay disabled until you enable them in the list.',
+          selected: function (n) { return n + ' selected' }, selectAll: 'Select installable', clearSelection: 'Clear selection',
+          associate: 'Associate identical local skills', associateHint: 'Explicitly allow linking existing skills to this source. Different content is rejected and never overwritten.',
+          conflictHint: 'A skill with this name exists. Enable association above only if its content is identical.',
+          noSkills: 'No skills are available in this source.', noneSelected: 'Select at least one skill to install.',
+          refresh: 'Refresh source', refreshing: 'Refreshing source…', refreshed: 'Source list refreshed; installed content was not updated',
+          check: 'Check updates', checking: 'Checking updates…', checked: 'Update check completed',
+          update: 'Update', updating: 'Updating skill…', updated: 'Skill updated', uninstall: 'Uninstall',
+          uninstallTitle: 'Uninstall online skill', uninstallBody: function (n) { return 'The local content of “' + n + '” will be uninstalled. You can install it again from its source.' },
+          partialHint: 'Imported on demand: only resolved skills are managed here. Search or use the repository link to add other skills.',
+          expandAll: 'Expand all', collapseAll: 'Collapse all', expandSource: 'Expand source', collapseSource: 'Collapse source',
+          summary: function (installed, total, on) { return installed + ' managed · ' + on + ' enabled' },
+          source: 'Source', openSource: 'Open GitHub source', version: 'Version', managedNote: 'This skill is managed by an online source. View its content here; use the list to toggle or update it.',
+          busy: 'A task is running. Wait for it to finish before closing.', inspect: 'View and choose skills', notChecked: 'Updates not checked yet', upstreamRemoved: 'Removed upstream',
+        },
         busyWrite: 'The previous change is still saving; try again in a moment.',
         reloadHint: 'The host reloads this server; existing connections may drop briefly.',
         unsupported: {
           mcp: 'No configuration editor is available here, so MCP servers are view-only.',
           prompts: 'No system-prompt service here; prompts are stored but not injected.',
-          skills: 'This configuration has no skill service.',
+          skills: 'This configuration has no skill service.', tools: 'No tool catalog is available here.',
         },
       },
     }
@@ -239,11 +311,12 @@ window.__ModuleLoader__.load({
 
     /* ── api layer: the only place that talks to the host ─────────────────────────────────────────────────── */
 
-    async function call(action, payload) {
+    async function call(action, payload, signal) {
       var response = await fetch(API, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ action: action, payload: payload || {} }),
+        signal: signal,
       })
       var body = null
       try { body = await response.json() } catch (error) { body = null }
@@ -268,6 +341,8 @@ window.__ModuleLoader__.load({
       empty: ['M2.5 9.5l2-5.5h7l2 5.5', 'M2.5 9.5V13h11V9.5', 'M2.5 9.5h3.5l1 1.5h2l1-1.5h3.5'],
       warn: ['M8 2.5l6 10.5H2z', 'M8 7v2.5', 'M8 11.3h.01'],
       check: ['M3.5 8.5l3 3 6-7'],
+      down: ['M4 6l4 4 4-4'],
+      right: ['M6 4l4 4-4 4'],
       plug: ['M6 2v3', 'M10 2v3', 'M4.5 5h7v2.5a3.5 3.5 0 0 1-7 0z', 'M8 11v3'],
     }
 
@@ -375,7 +450,9 @@ window.__ModuleLoader__.load({
         spellCheck: false,
         autoComplete: 'off',
         autoFocus: props.autoFocus,
+        'aria-label': props.ariaLabel,
         onChange: function (event) { props.onChange(event.target.value) },
+        onKeyDown: props.onKeyDown,
       })
     }
 
@@ -413,16 +490,46 @@ window.__ModuleLoader__.load({
       }, [active])
     }
 
+    function useFocusTrap(active, rootRef) {
+      React.useEffect(function () {
+        if (!active || !rootRef.current) return undefined
+        var root = rootRef.current
+        var previous = document.activeElement
+        function controls() {
+          return Array.prototype.slice.call(root.querySelectorAll('button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),a[href],[tabindex="0"]'))
+            .filter(function (element) { return element.getClientRects().length > 0 })
+        }
+        var first = root.querySelector('input:not([disabled]),textarea:not([disabled])') || controls()[0]
+        if (first) first.focus()
+        function onKey(event) {
+          if (event.key !== 'Tab') return
+          var items = controls()
+          if (!items.length) { event.preventDefault(); root.focus(); return }
+          var current = document.activeElement
+          var edge = event.shiftKey ? items[0] : items[items.length - 1]
+          if (current === edge || !root.contains(current)) {
+            event.preventDefault()
+            items[event.shiftKey ? items.length - 1 : 0].focus()
+          }
+        }
+        document.addEventListener('keydown', onKey, true)
+        return function () {
+          document.removeEventListener('keydown', onKey, true)
+          if (previous && previous.isConnected && typeof previous.focus === 'function') previous.focus()
+        }
+      }, [active])
+    }
+
     function Drawer(props) {
+      var rootRef = React.useRef(null)
+      useFocusTrap(!props.focusBlocked, rootRef)
       // While a confirmation sits on top, ESC belongs to it.
-      useEscape(!props.blocked, props.onClose)
+      useEscape(!props.blocked && !props.closeDisabled, props.onClose)
       var bodyRef = React.useRef(null)
-      return h('div', {
-        className: 'sw-layer',
-        onMouseDown: function (event) { if (event.target === event.currentTarget) props.onClose() },
-      },
+      // Backdrop clicks deliberately do not dismiss a working panel.
+      return h('div', { className: 'sw-layer sw-drawer-layer' },
         h('aside', {
-          className: 'sw-drawer',
+          className: 'sw-drawer' + (props.className ? ' ' + props.className : ''), ref: rootRef, tabIndex: -1,
           role: 'dialog',
           'aria-modal': 'true',
           'aria-label': props.title,
@@ -433,13 +540,15 @@ window.__ModuleLoader__.load({
             }
           },
         },
+          h('nav', { className: 'sw-drawer-navigation' },
+            h(Button, { className: 'sw-drawer-dismiss', icon: 'close', disabled: props.closeDisabled || props.blocked,
+              title: props.closeLabel + ': ' + props.title, onClick: props.onClose }, props.closeLabel)),
           h('header', { className: 'sw-drawer-head' },
             h('span', { className: 'sw-drawer-icon' }, h(Icon, { name: props.icon, size: 18 })),
             h('div', { className: 'sw-drawer-heading' },
               h('h2', { className: 'sw-drawer-title' }, props.title),
               props.subtitle ? h('p', { className: 'sw-drawer-sub' }, props.subtitle) : null,
-              props.note ? h('p', { className: 'sw-drawer-note' }, props.note) : null),
-            h(IconButton, { icon: 'close', label: props.closeLabel, onClick: props.onClose })),
+              props.note ? h('p', { className: 'sw-drawer-note' }, props.note) : null)),
           props.banner,
           h('div', { className: 'sw-drawer-body', ref: bodyRef }, props.children),
           h('footer', { className: 'sw-drawer-foot' },
@@ -448,12 +557,14 @@ window.__ModuleLoader__.load({
     }
 
     function Dialog(props) {
+      var rootRef = React.useRef(null)
+      useFocusTrap(true, rootRef)
       useEscape(true, props.onClose)
       return h('div', {
         className: 'sw-layer sw-layer-center',
         onMouseDown: function (event) { if (event.target === event.currentTarget) props.onClose() },
       },
-        h('div', { className: 'sw-dialog', role: 'alertdialog', 'aria-modal': 'true', 'aria-label': props.title },
+        h('div', { className: 'sw-dialog', ref: rootRef, tabIndex: -1, role: 'alertdialog', 'aria-modal': 'true', 'aria-label': props.title },
           h('h2', { className: 'sw-dialog-title' }, props.title),
           h('p', { className: 'sw-dialog-body' }, props.body),
           h('div', { className: 'sw-dialog-foot' }, props.footer)))
@@ -626,11 +737,11 @@ window.__ModuleLoader__.load({
     /* ── panel ────────────────────────────────────────────────────────────────────────────────────────────── */
 
     function rowKey(kind, row) {
-      return kind + ':' + (kind === 'skills' ? row.name : row.id)
+      return kind + ':' + (kind === 'skills' || kind === 'tools' ? row.name : row.id)
     }
 
     function isOn(kind, row) {
-      return kind === 'skills' ? row.modelInvocable : row.enabled
+      return kind === 'skills' ? row.installed !== false && row.modelInvocable !== false : kind === 'tools' ? true : row.enabled
     }
 
     function Panel(props) {
@@ -655,16 +766,32 @@ window.__ModuleLoader__.load({
       var saving = savingState[0], setSaving = savingState[1]
       var toastState = React.useState(null)
       var toast = toastState[0], setToast = toastState[1]
+      var sourceDraftState = React.useState(null)
+      var sourceDraft = sourceDraftState[0], setSourceDraft = sourceDraftState[1]
+      var writingState = React.useState(false)
+      var writing = writingState[0], setWriting = writingState[1]
+      var operationState = React.useState(null)
+      var operation = operationState[0], setOperation = operationState[1]
+      var sourceStatusState = React.useState({})
+      var sourceStatus = sourceStatusState[0], setSourceStatus = sourceStatusState[1]
+      var collapsedState = React.useState({})
+      var collapsed = collapsedState[0], setCollapsed = collapsedState[1]
+      var toolState = React.useState(null)
+      var toolDetail = toolState[0], setToolDetail = toolState[1]
 
       var lockRef = React.useRef(false)
       var aliveRef = React.useRef(true)
       var searchRef = React.useRef(null)
       var toastTimer = React.useRef(null)
+      var sourceRequestRef = React.useRef(0)
+      var sourceReadAbortRef = React.useRef(null)
 
       React.useEffect(function () {
         aliveRef.current = true
         return function () {
           aliveRef.current = false
+          sourceRequestRef.current += 1
+          if (sourceReadAbortRef.current) sourceReadAbortRef.current.abort()
           if (toastTimer.current) clearTimeout(toastTimer.current)
         }
       }, [])
@@ -690,7 +817,7 @@ window.__ModuleLoader__.load({
       // `/` focuses the search box, the way host lists do.
       React.useEffect(function () {
         function onKey(event) {
-          if (event.key !== '/' || draft || confirm) return
+          if (event.key !== '/' || draft || confirm || sourceDraft || toolDetail) return
           var target = event.target
           if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
           if (!searchRef.current) return
@@ -699,7 +826,7 @@ window.__ModuleLoader__.load({
         }
         window.addEventListener('keydown', onKey)
         return function () { window.removeEventListener('keydown', onKey) }
-      }, [draft, confirm])
+      }, [draft, confirm, sourceDraft, toolDetail])
 
       /**
        * One write at a time: a ref answers synchronously, the state drives rendering.
@@ -708,6 +835,7 @@ window.__ModuleLoader__.load({
       async function withWrite(operation) {
         if (lockRef.current) return 'busy'
         lockRef.current = true
+        setWriting(true)
         try {
           await operation()
           return 'ok'
@@ -715,46 +843,285 @@ window.__ModuleLoader__.load({
           notify('error', String((error && error.message) || error))
           return 'failed'
         } finally {
-          lockRef.current = false
           await load(true)
+          lockRef.current = false
+          if (aliveRef.current) setWriting(false)
         }
       }
 
       var data = state.data
+      var sources = data && data.skills ? (data.skills.sources || []) : []
       var lists = {
-        skills: data ? data.skills.rows : [],
-        mcp: data ? data.mcp.rows : [],
-        prompts: data ? data.prompts.rows : [],
+        skills: data && data.skills ? data.skills.rows || [] : [],
+        mcp: data && data.mcp ? data.mcp.rows || [] : [],
+        prompts: data && data.prompts ? data.prompts.rows || [] : [],
+        tools: data && data.tools ? data.tools.rows || [] : [],
       }
       var supported = {
         skills: !data || data.skills.supported !== false,
         mcp: !data || data.mcp.supported !== false,
         prompts: !data || data.prompts.supported !== false,
+        tools: !data || Boolean(data.tools && data.tools.supported !== false),
       }
-
-      var all = lists[tab]
-      var activeCount = all.filter(function (row) { return isOn(tab, row) }).length
+      // The main list contains installed skills only; uninstalled repository entries stay in link previews.
+      var all = lists[tab].filter(function (row) { return tab !== 'skills' || row.installed !== false }).map(function (row) {
+        if (tab !== 'skills' || row.origin !== 'online') return row
+        var source = sources.find(function (item) { return item.id === row.sourceId })
+        return Object.assign({}, row, { sourceUrl: source ? source.url : row.sourceUrl, sourceLabel: row.sourceLabel || (source && source.label) })
+      })
+      var onlineGroups = sources.map(function (source) {
+        var installed = lists.skills.filter(function (row) { return row.origin === 'online' && row.sourceId === source.id && row.installed !== false })
+        var entries = installed.map(function (row) {
+          var metadata = (source.skills || []).find(function (skill) { return skill.name === row.name })
+          return Object.assign({}, metadata || {}, row, { installed: true, sourceUrl: source.url, sourceLabel: source.label })
+        })
+        return Object.assign({}, source, { skills: entries, availableSkills: source.skills || [] })
+      }).filter(function (source) { return source.skills.length > 0 })
+      var installedRows = all.filter(function (row) { return row.installed !== false })
+      var activeCount = installedRows.filter(function (row) { return isOn(tab, row) }).length
       var needle = query.trim().toLowerCase()
-      var visible = all.filter(function (row) {
+      function matches(row, source) {
         if (filter === 'on' && !isOn(tab, row)) return false
-        if (filter === 'off' && isOn(tab, row)) return false
+        if (filter === 'off' && (row.installed === false || isOn(tab, row))) return false
         if (!needle) return true
         var hay = tab === 'mcp'
           ? [row.serverName, row.command, (row.args || []).join(' '), row.url, row.id]
           : tab === 'skills'
-            ? [row.name, row.description, row.whenToUse, row.source]
-            : [row.title, row.text, row.id]
+            ? [row.name, row.description, row.whenToUse, row.source, row.sourceLabel, row.sourceUrl, source && source.label, source && source.url]
+            : tab === 'tools' ? [row.name, row.description] : [row.title, row.text, row.id]
         return hay.join(' ').toLowerCase().indexOf(needle) !== -1
-      })
+      }
+      var visible = all.filter(function (row) { return matches(row) })
+      var visibleSources = onlineGroups.map(function (source) {
+        return Object.assign({}, source, { visible: source.skills.filter(function (row) { return matches(row, source) }) })
+      }).filter(function (source) { return source.visible.length > 0 })
+
+      function cancelSourceRead() {
+        sourceRequestRef.current += 1
+        if (sourceReadAbortRef.current) sourceReadAbortRef.current.abort()
+        sourceReadAbortRef.current = null
+      }
+      function beginSourceRead() {
+        cancelSourceRead()
+        var controller = new AbortController()
+        sourceReadAbortRef.current = controller
+        return { id: sourceRequestRef.current, controller: controller }
+      }
+      function readIsCurrent(request) {
+        return aliveRef.current && request.id === sourceRequestRef.current && !request.controller.signal.aborted
+      }
+      function openSource(source, selectedName) {
+        cancelSourceRead()
+        setSourceDraft({ mode: source ? 'link' : 'search', url: source ? source.url : '', phase: 'idle',
+          preview: source && selectedName ? { source: source, skills: source.availableSkills || source.skills || [] } : null,
+          selected: selectedName ? [selectedName] : [], associate: false, error: null, notice: null, failedAdd: null, addingKey: null,
+          directoryQuery: '', searchPhase: 'idle', results: [], searchedQuery: '', searchError: null, previewFilter: '', picked: null })
+      }
+      function returnToSkillList() {
+        if (sourceDraft && sourceDraft.phase === 'installing') return
+        cancelSourceRead()
+        setSourceDraft(null)
+        setTab('skills')
+        setQuery('')
+        setFilter('all')
+      }
+      async function addDirectorySkill(skill) {
+        if (!sourceDraft || sourceDraft.phase !== 'idle' || writing || lockRef.current || skill.installed || skill.supported === false) return
+        cancelSourceRead()
+        var key = skill.url || skill.id
+        patchSource({ phase: 'installing', addingKey: key, error: null, failedAdd: null, notice: null, searchPhase: 'ready' })
+        setOperation(text.online.adding + ' ' + skill.name)
+        var result = null
+        var failure = null
+        var outcome = await withWrite(async function () {
+          try { result = await call('source.add', { url: skill.url }) }
+          catch (error) { failure = String(error.message || error); throw error }
+        })
+        if (!aliveRef.current) return
+        setOperation(null)
+        if (outcome === 'ok') {
+          setSourceDraft(function (cur) {
+            if (!cur) return cur
+            return Object.assign({}, cur, {
+              phase: 'idle', addingKey: null, failedAdd: null, error: null,
+              notice: result.name + ' · ' + (result.added ? text.online.addedDisabled : text.online.alreadyAdded),
+              results: cur.results.map(function (item) {
+                return item.url === skill.url || (skill.id && item.id === skill.id)
+                  ? Object.assign({}, item, { installed: true, installedName: result.name }) : item
+              }),
+            })
+          })
+          if (result.sourceId) setCollapsed(function (prev) { return Object.assign({}, prev, { [result.sourceId]: false }) })
+        } else {
+          patchSource({ phase: 'idle', addingKey: null, failedAdd: skill, error: failure || text.busyWrite })
+        }
+      }
+      function closeSource() {
+        if (sourceDraft && sourceDraft.phase === 'installing') return
+        cancelSourceRead()
+        setSourceDraft(null)
+      }
+      function patchSource(patch) {
+        setSourceDraft(function (cur) { return cur ? Object.assign({}, cur, patch) : cur })
+      }
+      function changeSourceMode(mode) {
+        if (!sourceDraft || sourceDraft.phase === 'installing') return
+        cancelSourceRead()
+        patchSource({ mode: mode, preview: null, selected: [], associate: false, phase: 'idle', searchPhase: 'idle', error: null, searchError: null, notice: null, failedAdd: null, previewFilter: '', picked: null })
+      }
+      function changeDirectoryQuery(value) {
+        cancelSourceRead()
+        patchSource({ directoryQuery: value, phase: 'idle', searchPhase: 'idle', results: [], searchedQuery: '', searchError: null, error: null, notice: null, failedAdd: null })
+      }
+      function selectableSkill(skill, associate) {
+        return !skill.installed && (!skill.conflict || (skill.canAssociate && associate))
+      }
+      async function searchDirectory(event) {
+        if (event) event.preventDefault()
+        if (!sourceDraft || sourceDraft.phase === 'installing') return
+        var keyword = sourceDraft.directoryQuery.trim()
+        if (!keyword) { patchSource({ searchError: text.online.searchRequired }); return }
+        var request = beginSourceRead()
+        patchSource({ phase: 'idle', searchPhase: 'searching', searchError: null, error: null, preview: null, selected: [], picked: null, notice: null, failedAdd: null })
+        try {
+          var result = await call('source.search', { query: keyword }, request.controller.signal)
+          if (!readIsCurrent(request)) return
+          patchSource({ searchPhase: 'ready', results: Array.isArray(result.skills) ? result.skills : [], searchedQuery: keyword })
+        } catch (error) {
+          if (!readIsCurrent(request)) return
+          patchSource({ searchPhase: 'error', searchError: String((error && error.message) || text.online.searchError) })
+        } finally {
+          if (readIsCurrent(request)) sourceReadAbortRef.current = null
+        }
+      }
+      function sourceUrl(value) {
+        var url = String(value || '').trim()
+        if (/^(?:www\.)?(?:skills\.sh|github\.com)\//i.test(url)) url = 'https://' + url
+        else if (/^[\w.-]+\/[\w.-]+$/.test(url)) url = 'https://github.com/' + url
+        var parsed = new URL(url)
+        var host = parsed.hostname.toLowerCase()
+        var parts = parsed.pathname.split('/').filter(Boolean)
+        if (parsed.protocol !== 'https:' || parsed.username || parsed.password || parsed.port ||
+          (host !== 'github.com' && host !== 'skills.sh' && host !== 'www.skills.sh') ||
+          (host === 'github.com' ? parts.length < 2 : parts.length < 2 || parts.length > 3)) throw new Error(text.online.urlError)
+        return url
+      }
+      async function previewSource(value, picked) {
+        if (!sourceDraft || sourceDraft.phase === 'installing') return
+        var url
+        try { url = sourceUrl(typeof value === 'string' ? value : sourceDraft.url) }
+        catch (error) { patchSource({ error: text.online.urlError }); return }
+        var request = beginSourceRead()
+        patchSource({ url: url, phase: 'previewing', error: null, selected: [], preview: null, picked: picked || null, previewFilter: '', notice: null, failedAdd: null })
+        try {
+          var result = await call('source.preview', { url: url }, request.controller.signal)
+          if (!readIsCurrent(request)) return
+          var skills = result.skills || []
+          // Directory slugs are not installation names. Trust only names resolved by the preview.
+          var suggested = Array.isArray(result.selectedNames) ? result.selectedNames : skills.filter(function (skill) { return skill.selected === true }).map(function (skill) { return skill.name })
+          if (!suggested.length && skills.length === 1) suggested = [skills[0].name]
+          var selected = suggested.filter(function (name, i) {
+            return suggested.indexOf(name) === i && skills.some(function (skill) { return skill.name === name && selectableSkill(skill, false) })
+          })
+          patchSource({ preview: result, selected: selected, associate: false, phase: 'idle', error: null })
+        } catch (error) {
+          if (!readIsCurrent(request)) return
+          patchSource({ phase: 'idle', error: String((error && error.message) || text.online.previewFailed) })
+        } finally {
+          if (readIsCurrent(request)) sourceReadAbortRef.current = null
+        }
+      }
+      function backFromPreview() {
+        cancelSourceRead()
+        patchSource({ preview: null, selected: [], phase: 'idle', error: null, previewFilter: '', picked: null })
+      }
+      async function updatePreviewSkill(skill) {
+        if (!sourceDraft || sourceDraft.phase !== 'idle' || writing) return
+        var previous = sourceDraft
+        patchSource({ phase: 'installing', error: null })
+        setOperation(text.online.updating + ' ' + skill.name)
+        var failure = null
+        var outcome = await withWrite(async function () {
+          try { await call('skill.update', { name: skill.name }) }
+          catch (error) { failure = String(error.message || error); throw error }
+        })
+        if (!aliveRef.current) return
+        setOperation(null)
+        patchSource({ phase: 'idle', error: failure })
+        if (outcome === 'ok') {
+          notify('ok', text.online.updated)
+          // Re-read the preview after updating, rather than leaving stale update flags on screen.
+          await previewSource(previous.url, previous.picked)
+        } else if (outcome === 'busy') patchSource({ error: text.busyWrite })
+      }
+      async function installSource() {
+        var cur = sourceDraft
+        if (!cur || cur.phase !== 'idle' || !cur.preview || writing) return
+        var names = cur.selected.filter(function (name) {
+          return (cur.preview.skills || []).some(function (skill) { return skill.name === name && selectableSkill(skill, cur.associate) })
+        })
+        if (!names.length) { patchSource({ error: text.online.noneSelected }); return }
+        patchSource({ phase: 'installing', error: null })
+        setOperation(text.online.installing)
+        var outcome = await withWrite(async function () {
+          try {
+            await call('source.install', { token: cur.preview.token, url: cur.preview.source.url || cur.url,
+              names: names, enabled: false, associate: cur.associate })
+          } catch (error) { if (aliveRef.current) patchSource({ error: String(error.message || error) }); throw error }
+        })
+        if (!aliveRef.current) return
+        setOperation(null)
+        patchSource({ phase: 'idle' })
+        if (outcome === 'ok') { setSourceDraft(null); setTab('skills'); setQuery(''); setFilter('all'); notify('ok', text.online.installedDone) }
+        else if (outcome === 'busy') patchSource({ error: text.busyWrite })
+      }
+      async function sourceAction(source, action) {
+        if (writing) return
+        var key = 'source:' + source.id
+        var label = action === 'source.refresh' ? text.online.refreshing : text.online.checking
+        setPending(function (p) { return Object.assign({}, p, { [key]: true }) })
+        setSourceStatus(function (p) { return Object.assign({}, p, { [source.id]: { pending: true, text: label } }) })
+        setOperation(label)
+        var outcome = await withWrite(async function () {
+          try { await call(action, { id: source.id }) }
+          catch (error) {
+            setSourceStatus(function (p) { return Object.assign({}, p, { [source.id]: { error: true, text: String(error.message || error) } }) })
+            throw error
+          }
+        })
+        if (!aliveRef.current) return
+        setOperation(null)
+        setPending(function (p) { var n = Object.assign({}, p); delete n[key]; return n })
+        if (outcome === 'ok') {
+          var done = action === 'source.refresh' ? text.online.refreshed : text.online.checked
+          setSourceStatus(function (p) { return Object.assign({}, p, { [source.id]: { text: done } }) })
+          notify('ok', done)
+        } else if (outcome === 'busy') {
+          setSourceStatus(function (p) { return Object.assign({}, p, { [source.id]: { error: true, text: text.busyWrite } }) })
+        }
+      }
+      async function updateSkill(row) {
+        if (writing) return
+        var key = rowKey('skills', row)
+        setPending(function (p) { return Object.assign({}, p, { [key]: true }) })
+        setOperation(text.online.updating + ' ' + row.name)
+        var outcome = await withWrite(function () { return call('skill.update', { name: row.name }) })
+        if (!aliveRef.current) return
+        setOperation(null)
+        setPending(function (p) { var n = Object.assign({}, p); delete n[key]; return n })
+        if (outcome === 'ok') notify('ok', text.online.updated)
+        else if (outcome === 'busy') notify('error', text.busyWrite)
+      }
 
       /* drafts */
 
       function openDraft(kind, row) {
+        if (kind === 'tools') { setToolDetail(row); return }
         if (kind === 'skills') {
-          var readOnly = Boolean(row) && !row.writable
+          var readOnly = Boolean(row) && (!row.writable || row.editable === false)
           setDraft({
             kind: kind, mode: row ? (readOnly ? 'view' : 'edit') : 'create', readOnly: readOnly, touched: false,
-            originalName: row ? row.name : null, path: row ? row.path : '', loading: Boolean(row),
+            originalName: row ? row.name : null, path: row ? row.path : '', loading: Boolean(row), managed: Boolean(row && row.managed),
             fields: {
               name: row ? row.name : '', description: row ? row.description : '', whenToUse: row ? row.whenToUse || '' : '',
               modelInvocable: row ? row.modelInvocable : true, userInvocable: row ? row.userInvocable : true, content: '',
@@ -767,6 +1134,7 @@ window.__ModuleLoader__.load({
                 if (!cur || cur.kind !== 'skills' || cur.originalName !== row.name) return cur
                 return Object.assign({}, cur, {
                   loading: false, path: detail.path || cur.path,
+                  readOnly: cur.readOnly || detail.editable === false, mode: cur.readOnly || detail.editable === false ? 'view' : cur.mode,
                   fields: Object.assign({}, cur.fields, { content: detail.content || '', whenToUse: detail.whenToUse || cur.fields.whenToUse }),
                 })
               })
@@ -801,18 +1169,19 @@ window.__ModuleLoader__.load({
       // `N` opens the create drawer for the current tab, the counterpart of `/` for search.
       React.useEffect(function () {
         function onKey(event) {
-          if (draft || confirm) return
+          if (draft || confirm || sourceDraft || toolDetail) return
           if (event.metaKey || event.ctrlKey || event.altKey) return
           if (event.key !== 'n' && event.key !== 'N') return
           var target = event.target
           if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
-          if (!CREATABLE[tab] || !supported[tab]) return
+          if ((tab !== 'skills' && !CREATABLE[tab]) || !supported[tab] || writing) return
           event.preventDefault()
-          openDraft(tab, null)
+          if (tab === 'skills') openSource(null)
+          else openDraft(tab, null)
         }
         window.addEventListener('keydown', onKey)
         return function () { window.removeEventListener('keydown', onKey) }
-      }, [draft, confirm, tab, supported.skills, supported.mcp, supported.prompts])
+      }, [draft, confirm, sourceDraft, toolDetail, tab, writing, supported.skills, supported.mcp, supported.prompts, supported.tools])
 
       function setField(key) {
         return function (value) {
@@ -866,7 +1235,7 @@ window.__ModuleLoader__.load({
 
       async function toggle(kind, row, next) {
         var key = rowKey(kind, row)
-        if (pending[key]) return
+        if (pending[key] || writing) return
         // Optimistic: flip locally, revert when the host refuses.
         setPending(function (p) { var n = Object.assign({}, p); n[key] = true; return n })
         setState(function (prev) {
@@ -881,7 +1250,7 @@ window.__ModuleLoader__.load({
           return Object.assign({}, prev, { data: copy })
         })
         var outcome = await withWrite(async function () {
-          if (kind === 'skills') await call('skill.setInvocation', { name: row.name, modelInvocable: next, userInvocable: row.userInvocable })
+          if (kind === 'skills') await call('skill.setInvocation', { name: row.name, enabled: next })
           else if (kind === 'mcp' && row.external) await call('mcp.setExternalEnabled', { entryId: row.entryId, enabled: next })
           else if (kind === 'mcp') await call('mcp.setEnabled', { id: row.id, enabled: next })
           else await call('prompt.setEnabled', { id: row.id, enabled: next })
@@ -931,7 +1300,7 @@ window.__ModuleLoader__.load({
         var busy = Boolean(pending[key])
         var tags = []
         var actions = []
-        var editable = kind === 'skills' ? row.writable : !(kind === 'mcp' && row.external)
+        var editable = kind === 'skills' ? row.writable && row.editable !== false : kind !== 'tools' && !(kind === 'mcp' && row.external)
 
         if (kind === 'skills') {
           if (!row.writable) tags.push(h(Tag, { key: 'ro' }, h(Icon, { name: 'lock', size: 11 }), text.readOnly))
@@ -942,6 +1311,8 @@ window.__ModuleLoader__.load({
           tags.push(h(Tag, { key: 'tr', tone: 'quiet' }, row.transport === 'streamable-http' ? 'HTTP' : 'stdio'))
           if (row.external) tags.push(h(Tag, { key: 'ro' }, h(Icon, { name: 'lock', size: 11 }), text.readOnly))
           if (row.phase === 'failed') tags.push(h(Tag, { key: 'f', tone: 'error' }, 'failed'))
+        } else if (kind === 'tools') {
+          tags.push(h(Tag, { key: 'ro' }, text.readOnly))
         } else {
           // `applied` is the host's own answer to "this prompt is in the assembled system prompt right now".
           if (row.applied) tags.push(h(Tag, { key: 'on', tone: 'ok' }, text.injected))
@@ -956,6 +1327,7 @@ window.__ModuleLoader__.load({
 
         var description = kind === 'skills'
           ? row.description
+          : kind === 'tools' ? row.description
           : kind === 'mcp'
             ? (row.transport === 'streamable-http' ? row.url : [row.command].concat(row.args || []).join(' '))
             : String(row.text || '').replace(/\s+/g, ' ')
@@ -963,8 +1335,8 @@ window.__ModuleLoader__.load({
         return h(Row, {
           key: key,
           kind: kind,
-          icon: kind === 'skills' ? 'skill' : kind === 'mcp' ? 'server' : 'prompt',
-          title: kind === 'skills' ? row.name : kind === 'mcp' ? (row.serverName || row.id) : (row.title || row.id),
+          icon: kind === 'skills' ? 'skill' : kind === 'mcp' ? 'server' : kind === 'tools' ? 'plug' : 'prompt',
+          title: kind === 'skills' || kind === 'tools' ? row.name : kind === 'mcp' ? (row.serverName || row.id) : (row.title || row.id),
           mono: kind !== 'prompts',
           tags: tags,
           description: description,
@@ -978,10 +1350,73 @@ window.__ModuleLoader__.load({
             checked: on,
             pending: busy,
             label: kind === 'skills' ? text.fields.modelInvocable : on ? text.on : text.off,
-            disabled: (kind === 'skills' && !row.writable) || (kind === 'mcp' && row.external && !row.toggleable),
+            disabled: writing || kind === 'tools' || (kind === 'skills' && !row.writable) || (kind === 'mcp' && row.external && !row.toggleable),
             onChange: function (next) { toggle(kind, row, next) },
           }),
         })
+      }
+
+      function renderOnlineRow(source, row) {
+        var installed = row.installed !== false
+        var on = installed && isOn('skills', row)
+        var busy = Boolean(pending[rowKey('skills', row)])
+        var tags = [h(Tag, { key: 'installed', tone: installed ? (on ? 'ok' : 'quiet') : 'quiet' }, installed ? (on ? text.on : text.off) : text.online.available)]
+        if (row.conflict && !installed) tags.push(h(Tag, { key: 'conflict', tone: 'warn' }, text.online.conflict))
+        if (row.localModified) tags.push(h(Tag, { key: 'modified', tone: 'warn' }, text.online.modified))
+        if (row.updateAvailable) tags.push(h(Tag, { key: 'update', tone: 'ok' }, text.online.updateAvailable))
+        if (row.upstreamRemoved) tags.push(h(Tag, { key: 'removed', tone: 'warn' }, text.online.upstreamRemoved))
+        var actions = installed ? [
+          h(IconButton, { key: 'view', icon: 'skill', label: text.view, disabled: writing, onClick: function () { openDraft('skills', row) } }),
+          h(Button, { key: 'update', icon: 'refresh', disabled: writing || row.localModified || row.upstreamRemoved,
+            title: row.localModified ? text.online.modified : undefined, onClick: function () { updateSkill(row) } }, text.online.update),
+          h(IconButton, { key: 'remove', icon: 'trash', label: text.online.uninstall, danger: true, disabled: writing,
+            onClick: function () { askRemove('skills', row) } }),
+        ] : [h(Button, { key: 'install', icon: 'plus', disabled: writing || Boolean(row.conflict && !row.canAssociate),
+          title: row.conflict || text.online.install, onClick: function () { openSource(source, row.conflict ? null : row.name) } }, row.canAssociate ? text.online.inspect : text.online.install)]
+        return h(Row, {
+          key: source.id + ':' + row.name, kind: 'skills', icon: 'skill', mono: true, title: row.name,
+          description: row.description, tags: tags, muted: !on, pending: busy, actions: actions,
+          openLabel: installed ? text.view : text.online.inspect,
+          onOpen: function () { if (installed) openDraft('skills', row); else openSource(source, row.conflict ? null : row.name) },
+          toggle: installed ? h(Switch, { checked: on, pending: busy, label: row.name + ': ' + text.fields.modelInvocable,
+            disabled: writing || !row.writable, onChange: function (next) { toggle('skills', row, next) } }) : null,
+        })
+      }
+      function setAllSourcesCollapsed(next) {
+        setCollapsed(function (prev) {
+          var state = Object.assign({}, prev)
+          onlineGroups.forEach(function (source) { state[source.id] = next })
+          return state
+        })
+      }
+
+      function renderSource(source) {
+        var installed = source.skills.filter(function (row) { return row.installed !== false })
+        var on = installed.filter(function (row) { return isOn('skills', row) }).length
+        var status = sourceStatus[source.id]
+        var closed = Boolean(collapsed[source.id])
+        var contentId = 'sw-source-content-' + source.id
+        return h('section', { key: source.id, className: 'sw-source' },
+          h('div', { className: 'sw-source-head' },
+            h('button', { type: 'button', className: 'sw-source-toggle', 'aria-expanded': !closed, 'aria-controls': contentId,
+              title: (closed ? text.online.expandSource : text.online.collapseSource) + ': ' + (source.label || source.id),
+              onClick: function () { setCollapsed(function (prev) { return Object.assign({}, prev, { [source.id]: !closed }) }) } },
+              h(Icon, { name: closed ? 'right' : 'down' }),
+              h('span', { className: 'sw-source-title' }, source.label || source.id),
+              h('span', { className: 'sw-source-summary' }, text.online.summary(installed.length, source.skills.length, on))),
+            h('div', { className: 'sw-source-actions' },
+              h(Button, { icon: 'plus', disabled: writing, onClick: function () { openSource(source) } }, text.online.addFromSource),
+              h(Button, { disabled: writing, onClick: function () { sourceAction(source, 'source.check') } }, text.online.check),
+              h(IconButton, { icon: 'refresh', label: text.online.refresh, disabled: writing, onClick: function () { sourceAction(source, 'source.refresh') } }))),
+          h('div', { className: 'sw-source-meta' },
+            h('a', { href: source.url, target: '_blank', rel: 'noopener noreferrer', title: text.online.openSource }, source.url),
+            source.ref ? h(Tag, { tone: 'quiet' }, source.ref) : null,
+            source.commit ? h('code', { title: source.commit }, source.commit.slice(0, 8)) : null),
+          source.partial ? h('p', { className: 'sw-field-hint' }, text.online.partialHint) : null,
+          status ? h('p', { className: 'sw-source-status' + (status.error ? ' is-error' : ''), role: status.error ? 'alert' : 'status' }, status.text) : null,
+          h('div', { id: contentId, hidden: closed }, source.visible.length
+            ? h('ul', { className: 'sw-rows sw-online-rows' }, source.visible.map(function (row) { return renderOnlineRow(source, row) }))
+            : h('p', { className: 'sw-group-hint' }, text.online.noSkills)))
       }
 
       function groupsFor(kind, rows) {
@@ -998,14 +1433,14 @@ window.__ModuleLoader__.load({
             { id: 'mcpExternal', rows: rows.filter(function (r) { return r.external }) },
           ]
         }
-        return [{ id: 'prompts', rows: rows }]
+        return [{ id: kind === 'tools' ? 'tools' : 'prompts', rows: rows }]
       }
 
       /* render */
 
-      var tabs = ['skills', 'mcp', 'prompts']
-      // Skills are authored on disk (or by the agent): the panel views, toggles and edits them but never creates one.
-      var canCreate = CREATABLE[tab] && Boolean(supported[tab])
+      var tabs = ['skills', 'mcp', 'prompts', 'tools']
+      // Local skills keep their existing editors; online skills enter through source preview.
+      var canCreate = (tab === 'skills' || CREATABLE[tab]) && Boolean(supported[tab])
       // An empty list is never "filtered": the empty state has to stay readable even when a search was typed.
       var filtering = (Boolean(needle) || filter !== 'all') && all.length > 0
       var content
@@ -1028,8 +1463,26 @@ window.__ModuleLoader__.load({
           : h(EmptyState, {
             icon: tab === 'skills' ? 'skill' : tab === 'mcp' ? 'plug' : 'prompt',
             title: text.emptyTitle[tab],
-            text: text.empty[tab],
+            text: tab === 'skills' ? text.online.localEmpty : text.empty[tab],
           })
+      } else if (tab === 'skills') {
+        var localVisible = visible.filter(function (row) { return row.origin !== 'online' })
+        content = h('div', { className: 'sw-groups' },
+          localVisible.length ? h('section', { className: 'sw-skill-section' },
+            h('h2', { className: 'sw-skill-section-title' }, text.online.local),
+            h('div', { className: 'sw-groups' }, groupsFor('skills', localVisible).map(function (group) {
+              return h(Group, { key: group.id, title: text.groups[group.id], hint: text.groupHint[group.id] },
+                group.rows.map(function (row) { return renderRow('skills', row) }))
+            }))) : null,
+          visibleSources.length ? h('section', { className: 'sw-skill-section' },
+            h('div', { className: 'sw-skill-section-head' },
+              h('h2', { className: 'sw-skill-section-title' }, text.online.remote),
+              h('div', { className: 'sw-skill-section-actions', role: 'group', 'aria-label': text.online.remote },
+                h(Button, { disabled: !onlineGroups.some(function (source) { return Boolean(collapsed[source.id]) }),
+                  onClick: function () { setAllSourcesCollapsed(false) } }, text.online.expandAll),
+                h(Button, { disabled: !onlineGroups.some(function (source) { return !collapsed[source.id] }),
+                  onClick: function () { setAllSourcesCollapsed(true) } }, text.online.collapseAll))),
+            h('div', { className: 'sw-groups' }, visibleSources.map(renderSource))) : null)
       } else {
         content = h('div', { className: 'sw-groups' },
           groupsFor(tab, visible).map(function (group) {
@@ -1052,12 +1505,12 @@ window.__ModuleLoader__.load({
           note: draft.mode === 'create' ? text.createNote[draft.kind] : null,
           icon: draft.kind === 'skills' ? 'skill' : draft.kind === 'mcp' ? 'server' : 'prompt',
           closeLabel: text.close,
-          blocked: Boolean(confirm),
+          blocked: Boolean(confirm), focusBlocked: Boolean(confirm), closeDisabled: saving,
           onClose: function () { if (!saving) setDraft(null) },
           onSave: saveDraft,
           saveDisabled: draft.readOnly || saving,
           banner: draft.readOnly
-            ? h('div', { className: 'sw-banner' }, h(Icon, { name: 'lock' }), h('span', null, text.readOnlyNote))
+            ? h('div', { className: 'sw-banner' }, h(Icon, { name: 'lock' }), h('span', null, draft.managed ? text.online.managedNote : text.readOnlyNote))
             : draft.kind === 'mcp' && draft.mode !== 'create'
               ? h('div', { className: 'sw-banner' }, h(Icon, { name: 'refresh' }), h('span', null, text.reloadHint))
               : null,
@@ -1083,6 +1536,160 @@ window.__ModuleLoader__.load({
           draft.kind === 'skills' ? h(SkillForm, formProps) : draft.kind === 'mcp' ? h(McpForm, formProps) : h(PromptForm, formProps))
       }
 
+      var sourceDrawer = null
+      if (sourceDraft) {
+        var sourceBusy = sourceDraft.phase === 'installing'
+        var sourceReading = sourceDraft.phase === 'previewing'
+        var directoryBusy = sourceDraft.searchPhase === 'searching'
+        var preview = sourceDraft.preview
+        var previewSkills = preview ? preview.skills || [] : []
+        var previewNeedle = sourceDraft.previewFilter.trim().toLowerCase()
+        var previewVisible = previewSkills.filter(function (skill) {
+          return !previewNeedle || [skill.name, skill.description, skill.path].join(' ').toLowerCase().indexOf(previewNeedle) !== -1
+        })
+        var selectedCount = sourceDraft.selected.length
+        var searchMode = sourceDraft.mode === 'search'
+        var directoryResults = null
+        if (searchMode && !preview) {
+          if (directoryBusy) {
+            directoryResults = h('div', { className: 'sw-directory-state', role: 'status', 'aria-live': 'polite' },
+              h(Icon, { name: 'refresh', size: 20 }), h('p', null, text.online.searching))
+          } else if (sourceDraft.searchPhase === 'error') {
+            directoryResults = h('div', { className: 'sw-directory-state is-error', role: 'alert' },
+              h(Icon, { name: 'warn', size: 20 }), h('p', null, sourceDraft.searchError || text.online.searchError),
+              h(Button, { disabled: sourceBusy, onClick: searchDirectory }, text.retry))
+          } else if (sourceDraft.searchPhase === 'ready' && !sourceDraft.results.length) {
+            directoryResults = h(EmptyState, { icon: 'search', title: text.online.searchEmpty, text: text.online.searchEmptyHint })
+          } else if (sourceDraft.results.length) {
+            directoryResults = h('section', { className: 'sw-directory-results', 'aria-label': text.online.searchMode },
+              h('div', { className: 'sw-directory-summary', role: 'status', 'aria-live': 'polite' },
+                h('span', null, text.online.results(sourceDraft.results.length)), h('span', null, sourceDraft.searchedQuery)),
+              h('ul', { className: 'sw-directory-list' }, sourceDraft.results.map(function (skill) {
+                var supportedResult = skill.supported !== false && Boolean(skill.url)
+                var installations = Number(skill.installs)
+                return h('li', { key: skill.id || skill.url || [skill.source, skill.name].join(':'), className: 'sw-directory-card' },
+                  h('div', { className: 'sw-directory-card-main' },
+                    h('div', { className: 'sw-directory-card-title' },
+                      h('strong', null, skill.name)),
+                    h('div', { className: 'sw-directory-card-meta' },
+                      h('span', { className: 'sw-mono' }, skill.source),
+                      Number.isFinite(installations) && installations >= 0 ? h('span', null, text.online.installs(installations)) : null),
+                    !supportedResult ? h('p', { className: 'sw-directory-unsupported' }, skill.unsupportedReason || text.online.unsupportedResult) : null),
+                  h('div', { className: 'sw-directory-card-actions' },
+                    h(Button, { disabled: sourceBusy || sourceReading || writing || !supportedResult || skill.installed,
+                      icon: skill.installed ? 'check' : 'plus',
+                      onClick: function () { addDirectorySkill(skill) } }, sourceDraft.addingKey === (skill.url || skill.id) ? text.online.adding : skill.installed ? text.online.resultInstalled : text.online.resultPreview),
+                    skill.installed ? h(IconButton, { icon: 'skill', label: text.view + ': ' + skill.name, disabled: sourceBusy || sourceReading || writing,
+                      onClick: function () { previewSource(skill.url, skill) } }) : null))
+              })))
+          } else {
+            directoryResults = h(EmptyState, { icon: 'search', title: text.online.searchStart, text: text.online.searchStartHint })
+          }
+        }
+        sourceDrawer = h(Drawer, {
+          title: preview ? text.online.previewTitle : text.online.add,
+          subtitle: preview ? preview.source.label : null,
+          note: preview ? text.online.selectedHint : searchMode ? text.online.searchNote : text.online.linkNote,
+          className: 'sw-add-drawer', icon: preview ? 'skill' : searchMode ? 'search' : 'plus',
+          closeLabel: text.close, closeDisabled: sourceBusy, blocked: sourceBusy, onClose: closeSource,
+          onSave: installSource, saveDisabled: sourceBusy || sourceReading || !preview || !selectedCount,
+          banner: sourceBusy ? h('div', { className: 'sw-banner', role: 'status', 'aria-live': 'polite' }, h(Icon, { name: 'refresh' }),
+            h('span', null, operation || text.online.installing)) : null,
+          footHint: preview ? text.online.selected(selectedCount) : '',
+          footer: [
+            h('span', { key: 'gap', className: 'sw-grow' }),
+            h(Button, { key: 'cancel', disabled: sourceBusy, onClick: !preview && sourceDraft.notice ? returnToSkillList : closeSource },
+              preview ? text.cancel : sourceDraft.notice ? text.online.returnToList : text.close),
+            preview ? h(Button, { key: 'install', variant: 'primary', disabled: sourceBusy || sourceReading || writing || !selectedCount, onClick: installSource },
+              sourceBusy ? text.saving : text.online.installSelected) : null,
+          ],
+        },
+          !preview ? h('div', { className: 'sw-add-modes' }, h(Segmented, {
+            label: text.online.add, value: sourceDraft.mode, disabled: sourceBusy,
+            options: [{ value: 'search', label: text.online.searchMode }, { value: 'link', label: text.online.linkMode }], onChange: changeSourceMode,
+          })) : h('div', { className: 'sw-preview-back' }, h(Button, { disabled: sourceBusy, onClick: backFromPreview }, searchMode ? text.online.backSearch : text.online.backLink)),
+          !preview && searchMode ? h('form', { className: 'sw-discovery-form', onSubmit: searchDirectory },
+            h(Field, { id: 'sw-directory-query', label: text.online.searchLabel,
+              error: sourceDraft.searchPhase !== 'error' ? sourceDraft.searchError : null },
+              h('div', { className: 'sw-source-input' },
+                h(Input, { id: 'sw-directory-query', value: sourceDraft.directoryQuery, autoFocus: true, disabled: sourceBusy,
+                  placeholder: text.online.searchPlaceholder, onChange: changeDirectoryQuery }),
+                h(Button, { type: 'submit', variant: 'primary', icon: 'search', disabled: sourceBusy || sourceReading || directoryBusy || !sourceDraft.directoryQuery.trim() }, text.online.searchSubmit)))) : null,
+          !preview && !searchMode ? h('form', { className: 'sw-discovery-form', onSubmit: function (event) { event.preventDefault(); previewSource() } },
+            h(Field, { id: 'sw-source-url', label: text.online.url, hint: text.online.urlHint },
+              h('div', { className: 'sw-source-input' },
+                h(Input, { id: 'sw-source-url', mono: true, value: sourceDraft.url, autoFocus: true, disabled: sourceBusy,
+                  placeholder: 'https://skills.sh/cloudflare/skills/cloudflare',
+                  onChange: function (url) { cancelSourceRead(); patchSource({ url: url, phase: 'idle', preview: null, selected: [], error: null }) } }),
+                h(Button, { type: 'submit', variant: 'primary', disabled: sourceBusy || sourceReading || !sourceDraft.url.trim() }, text.online.preview)))) : null,
+          sourceReading ? h('div', { className: 'sw-banner', role: 'status', 'aria-live': 'polite' }, h(Icon, { name: 'refresh' }),
+            h('span', null, text.online.previewing)) : null,
+          sourceDraft.notice ? h('div', { className: 'sw-banner', role: 'status', 'aria-live': 'polite' }, h(Icon, { name: 'check' }), h('span', null, sourceDraft.notice)) : null,
+          sourceDraft.error ? h('div', { className: 'sw-banner sw-source-error', role: 'alert' }, h(Icon, { name: 'warn' }), h('span', null, sourceDraft.error),
+            !preview ? h(Button, { disabled: sourceBusy || sourceReading, onClick: function () {
+              if (sourceDraft.failedAdd) addDirectorySkill(sourceDraft.failedAdd)
+              else previewSource(sourceDraft.url, sourceDraft.picked)
+            } }, text.retry) : null) : null,
+          !preview ? directoryResults : null,
+          preview ? h('section', { className: 'sw-source-preview' },
+            h('div', { className: 'sw-preview-source' },
+              h('div', { className: 'sw-preview-source-heading' }, h('strong', null, preview.source.label), h('span', null, text.online.previewCount(previewSkills.length))),
+              h('div', { className: 'sw-source-meta' },
+                h('a', { href: preview.source.url, target: '_blank', rel: 'noopener noreferrer' }, preview.source.url),
+                preview.source.ref ? h('span', null, preview.source.ref) : null,
+                preview.source.commit ? h('code', { title: preview.source.commit }, preview.source.commit.slice(0, 8)) : null)),
+            h('div', { className: 'sw-preview-tools' },
+              h(Input, { id: 'sw-preview-filter', value: sourceDraft.previewFilter, disabled: sourceBusy, autoFocus: true,
+                ariaLabel: text.online.previewFilter, placeholder: text.online.previewFilter, onChange: function (value) { patchSource({ previewFilter: value }) } }),
+              h('div', { className: 'sw-selection-toolbar' },
+                h(Button, { disabled: sourceBusy || !previewVisible.some(function (skill) { return selectableSkill(skill, sourceDraft.associate) }), onClick: function () {
+                  var names = sourceDraft.selected.slice()
+                  previewVisible.forEach(function (skill) { if (selectableSkill(skill, sourceDraft.associate) && names.indexOf(skill.name) === -1) names.push(skill.name) })
+                  patchSource({ selected: names, error: null })
+                } }, text.online.visibleSelect),
+                h(Button, { disabled: sourceBusy || !selectedCount, onClick: function () { patchSource({ selected: [], error: null }) } }, text.online.clearSelection))),
+            previewSkills.some(function (skill) { return skill.canAssociate })
+              ? h('div', { className: 'sw-settings' }, h(SettingRow, { label: text.online.associate, hint: text.online.associateHint,
+                checked: sourceDraft.associate, disabled: sourceBusy, onChange: function (associate) {
+                  patchSource({ associate: associate, selected: sourceDraft.selected.filter(function (name) {
+                    return previewSkills.some(function (skill) { return skill.name === name && selectableSkill(skill, associate) })
+                  }) })
+                } })) : null,
+            previewVisible.length ? h('ul', { className: 'sw-source-choices' }, previewVisible.map(function (skill) {
+              var selectable = selectableSkill(skill, sourceDraft.associate)
+              return h('li', { key: skill.path || skill.name, className: 'sw-source-choice' + (sourceDraft.selected.indexOf(skill.name) !== -1 ? ' is-selected' : '') },
+                h('label', null,
+                  h('input', { type: 'checkbox', checked: sourceDraft.selected.indexOf(skill.name) !== -1,
+                    disabled: sourceBusy || !selectable, onChange: function (event) {
+                      var selected = sourceDraft.selected.filter(function (name) { return name !== skill.name })
+                      if (event.target.checked) selected.push(skill.name)
+                      patchSource({ selected: selected, error: null })
+                    } }),
+                  h('span', { className: 'sw-source-choice-text' },
+                    h('span', { className: 'sw-source-choice-title' }, h('strong', { className: 'sw-mono' }, skill.name),
+                      skill.installed || skill.conflict ? h(Tag, { tone: skill.conflict ? 'warn' : 'quiet' }, skill.installed ? text.online.installed : text.online.conflict) : null),
+                    h('span', { className: 'sw-source-choice-description' }, skill.description),
+                    skill.path ? h('span', { className: 'sw-source-choice-path sw-mono' }, skill.path) : null,
+                    skill.conflict ? h('span', { className: 'sw-source-choice-warning' }, typeof skill.conflict === 'string' ? skill.conflict : text.online.conflictHint) : null)),
+                skill.installed ? h(Button, { className: 'sw-preview-update', icon: 'refresh',
+                  disabled: sourceBusy || writing || skill.localModified || skill.upstreamRemoved,
+                  title: skill.localModified ? text.online.modified : skill.upstreamRemoved ? text.online.upstreamRemoved : undefined,
+                  onClick: function () { updatePreviewSkill(skill) } }, text.online.update) : null)
+            })) : h(EmptyState, { icon: 'search', title: previewNeedle ? text.online.noPreviewMatches : text.online.noSkills,
+              text: previewNeedle ? text.emptySearchText : text.online.noneSelected,
+              action: previewNeedle ? h(Button, { onClick: function () { patchSource({ previewFilter: '' }) } }, text.online.clearPreviewFilter) : null }),
+            previewSkills.some(function (skill) { return skill.installed }) ? h('p', { className: 'sw-field-hint' }, text.online.installedPreviewHint) : null) : null)
+      }
+
+      var toolsDrawer = toolDetail ? h(Drawer, {
+        title: text.tabs.tools, subtitle: toolDetail.name, icon: 'plug', closeLabel: text.close,
+        onClose: function () { setToolDetail(null) },
+        banner: h('div', { className: 'sw-banner' }, h(Icon, { name: 'lock' }), h('span', null, text.readOnlyNote)),
+        footer: [h(Button, { key: 'close', onClick: function () { setToolDetail(null) } }, text.close)],
+      }, h('p', { className: 'sw-tool-description' }, toolDetail.description || ''),
+        toolDetail.inputSchema || toolDetail.parameters || toolDetail.schema
+          ? h('pre', { className: 'sw-tool-schema sw-mono' }, JSON.stringify(toolDetail.inputSchema || toolDetail.parameters || toolDetail.schema, null, 2)) : null) : null
+
       return h('div', { className: 'sw-page' },
         h(StyleSheet),
         h('header', { className: 'sw-head' },
@@ -1092,18 +1699,18 @@ window.__ModuleLoader__.load({
           h('div', { className: 'sw-toolbar' },
             h(IconButton, {
               icon: 'refresh', label: text.refresh,
-              disabled: state.phase === 'loading',
+              disabled: state.phase === 'loading' || writing,
               onClick: function () { load(false) },
             }),
             canCreate ? h(Button, {
-              variant: 'primary', icon: 'plus', title: text.addHint[tab],
-              onClick: function () { openDraft(tab, null) },
-            }, text.add[tab]) : null)),
+              variant: 'primary', icon: 'plus', disabled: writing, title: tab === 'skills' ? text.online.addHint : text.addHint[tab],
+              onClick: function () { if (tab === 'skills') openSource(null); else openDraft(tab, null) },
+            }, tab === 'skills' ? text.online.add : text.add[tab]) : null)),
 
         h('div', { className: 'sw-body' },
           h('nav', { className: 'sw-tabs', role: 'tablist' },
             tabs.map(function (id) {
-              var total = lists[id].length
+              var total = lists[id].filter(function (row) { return id !== 'skills' || row.installed !== false }).length
               return h('button', {
                 key: id, type: 'button', role: 'tab',
                 'aria-selected': tab === id ? 'true' : 'false',
@@ -1114,6 +1721,10 @@ window.__ModuleLoader__.load({
             })),
 
           !supported[tab] ? h('div', { className: 'sw-banner sw-banner-warn' }, h(Icon, { name: 'warn' }), h('span', null, text.unsupported[tab])) : null,
+
+          operation ? h('div', { className: 'sw-banner', role: 'status', 'aria-live': 'polite' }, h(Icon, { name: 'refresh' }), h('span', null, operation)) : null,
+          state.phase === 'error' && data ? h('div', { className: 'sw-banner sw-source-error', role: 'alert' }, h(Icon, { name: 'warn' }), h('span', null, text.loadFailed + ': ' + state.error),
+            h(Button, { disabled: writing, onClick: function () { load(false) } }, text.retry)) : null,
 
           h('div', { className: 'sw-filters' },
             h('label', { className: 'sw-search' },
@@ -1136,23 +1747,23 @@ window.__ModuleLoader__.load({
               options: [
                 { value: 'all', label: text.filter.all },
                 { value: 'on', label: text.filter.on, count: activeCount },
-                { value: 'off', label: text.filter.off, count: all.length - activeCount },
+                { value: 'off', label: text.filter.off, count: installedRows.length - activeCount },
               ],
               onChange: setFilter,
             }),
-            h('span', { className: 'sw-stats' }, text.stats(all.length, activeCount))),
+            h('span', { className: 'sw-stats' }, text.stats(installedRows.length, activeCount))),
 
           content),
 
-        drawer,
+        drawer, sourceDrawer, toolsDrawer,
 
         confirm ? h(Dialog, {
-          title: text.confirmTitle[confirm.kind],
-          body: text.confirmBody[confirm.kind](confirm.label),
+          title: confirm.kind === 'skills' && confirm.row.origin === 'online' ? text.online.uninstallTitle : text.confirmTitle[confirm.kind],
+          body: confirm.kind === 'skills' && confirm.row.origin === 'online' ? text.online.uninstallBody(confirm.label) : text.confirmBody[confirm.kind](confirm.label),
           onClose: function () { if (!saving) setConfirm(null) },
           footer: [
             h(Button, { key: 'no', disabled: saving, onClick: function () { setConfirm(null) } }, text.cancel),
-            h(Button, { key: 'yes', variant: 'danger', disabled: saving, onClick: remove }, saving ? text.saving : text.remove),
+            h(Button, { key: 'yes', variant: 'danger', disabled: saving, onClick: remove }, saving ? text.saving : confirm.kind === 'skills' && confirm.row.origin === 'online' ? text.online.uninstall : text.remove),
           ],
         }) : null,
 
@@ -1297,7 +1908,10 @@ window.__ModuleLoader__.load({
 
       // drawer
       '.sw-drawer{display:flex;flex-direction:column;width:min(600px,100vw);height:100%;background:var(--dsw-alias-bg-overlay,var(--dsw-alias-bg-layer-1));border-left:.5px solid var(--dsw-alias-border-l2);box-shadow:var(--dsw-elevation-panel,var(--dsw-shadow-lv3,0 12px 40px rgba(0,0,0,.24)));animation:sw-slide .18s cubic-bezier(.2,.8,.2,1);}',
-      '.sw-drawer-head{display:flex;align-items:center;gap:12px;padding:18px 20px 14px;}',
+      '.sw-drawer-layer{padding-top:var(--dsh-frame-top-clearance,0px);}',
+      '.sw-drawer-navigation{display:flex;flex:none;align-items:center;padding:12px 20px 0;}',
+      '.sw-drawer-dismiss{height:36px;min-width:88px;-webkit-app-region:no-drag;}',
+      '.sw-drawer-head{display:flex;flex:none;align-items:center;gap:12px;padding:18px 20px 14px;}',
       '.sw-drawer-icon{flex:none;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-lg,10px);color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-layer-1);}',
       '.sw-drawer-heading{flex:1;min-width:0;}',
       '.sw-drawer-title{margin:0;font-size:16px;font-weight:500;line-height:24px;}',
@@ -1340,6 +1954,93 @@ window.__ModuleLoader__.load({
       '.sw-setting-hint{font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary);}',
       '.sw-meta-line{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dsw-alias-label-tertiary);}',
       '.sw-meta-line code{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 6px;border-radius:4px;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-fill-l1,var(--dsw-alias-bg-layer-2));}',
+
+      // source management uses the same controls and host theme as local lists
+      '.sw-skill-section{display:flex;flex-direction:column;gap:14px;}',
+      '.sw-skill-section-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;}',
+      '.sw-skill-section-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px;}',
+      '.sw-skill-section-actions .sw-btn{height:28px;font-size:12px;padding:0 10px;}',
+      '.sw-skill-section-title{margin:0;font-size:15px;line-height:22px;font-weight:500;color:var(--dsw-alias-label-primary);}',
+      '.sw-source{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-xl,12px);background:var(--dsw-alias-bg-layer-1);}',
+      '.sw-source-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;}',
+      '.sw-source-toggle{display:flex;flex:1;min-width:160px;align-items:center;flex-wrap:wrap;gap:8px;border:0;padding:2px 0;background:none;text-align:left;font:inherit;color:var(--dsw-alias-label-primary);cursor:pointer;}',
+      '.sw-source-toggle:focus-visible{' + FOCUS + 'border-radius:4px;}',
+      '.sw-source-title{font-size:14px;font-weight:500;overflow-wrap:anywhere;}',
+      '.sw-source-summary{font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary);}',
+      '.sw-source-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px;}',
+      '.sw-source-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary);min-width:0;}',
+      '.sw-source-meta a{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;text-decoration:none;}',
+      '.sw-source-meta a:hover{text-decoration:underline;}',
+      '.sw-source-meta code{font:inherit;font-family:var(--dsw-font-mono,monospace);}',
+      '.sw-source-status{margin:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;}',
+      '.sw-source-status.is-error,.sw-source-error{color:var(--dsw-alias-state-error-primary);}',
+      '.sw-online-rows .sw-row-actions{opacity:1;gap:4px;}',
+      '.sw-online-rows .sw-row-end{gap:8px;}',
+      '.sw-online-rows .sw-row-actions .sw-btn{height:28px;font-size:12px;padding:0 8px;}',
+      '.sw-source-input{display:flex;align-items:center;gap:8px;}',
+      '.sw-source-input .sw-input{flex:1;min-width:0;}',
+      '.sw-source-preview{display:flex;flex-direction:column;gap:14px;}',
+      '.sw-selection-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;color:var(--dsw-alias-label-tertiary);}',
+      '.sw-selection-toolbar>span{margin-right:auto;}',
+      '.sw-selection-toolbar .sw-btn{height:28px;font-size:12px;}',
+      '.sw-source-choices{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg,10px);}',
+      '.sw-source-choice+ .sw-source-choice{border-top:.5px solid var(--dsw-alias-border-l2);}',
+      '.sw-source-choice label{display:flex;align-items:flex-start;gap:10px;padding:12px;cursor:pointer;}',
+      '.sw-source-choice input{flex:none;margin:4px 0 0;accent-color:var(--dsw-alias-state-business-primary);}',
+      '.sw-source-choice input:focus-visible{' + FOCUS + '}',
+      '.sw-source-choice-text{display:flex;flex-direction:column;gap:5px;min-width:0;}',
+      '.sw-source-choice-title{display:flex;align-items:center;flex-wrap:wrap;gap:6px;}',
+      '.sw-source-choice-title strong{font-size:13px;font-weight:500;overflow-wrap:anywhere;}',
+      '.sw-source-choice-description{font-size:13px;line-height:20px;color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;}',
+      '.sw-source-choice-warning{font-size:12px;line-height:18px;color:var(--dsw-alias-state-warn-label,var(--dsw-alias-state-warn-primary));overflow-wrap:anywhere;}',
+      '.sw-page>.sw-layer{max-width:none;}',
+      '.sw-tool-description{margin:0;font-size:14px;line-height:22px;white-space:pre-wrap;overflow-wrap:anywhere;}',
+      '.sw-tool-schema{margin:0;font-size:12px;line-height:20px;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--dsw-alias-label-secondary);}',
+      '@media(max-width:680px){.sw-online-rows .sw-row{flex-wrap:wrap;}.sw-online-rows .sw-row-main{flex-basis:calc(100% - 60px);}.sw-online-rows .sw-row-end{margin-left:54px;flex:1;justify-content:flex-end;}.sw-source-summary{flex-basis:100%;padding-left:24px;}.sw-page{padding-left:20px;padding-right:20px;}.sw-source{padding:12px;}}',
+
+      // discovery keeps search results and confirmation in one modal without duplicating primary actions
+      '.sw-add-drawer{width:min(760px,100vw);}',
+      '.sw-add-drawer .sw-drawer-body{gap:20px;padding:16px 24px 28px;}',
+      '.sw-add-drawer .sw-drawer-head{padding:22px 24px 16px;}',
+      '.sw-add-drawer .sw-drawer-foot{padding:14px 24px;}',
+      '.sw-add-modes{display:flex;}',
+      '.sw-add-modes .sw-seg{width:100%;padding:3px;gap:4px;}',
+      '.sw-add-modes .sw-seg-item{flex:1;justify-content:center;height:32px;font-size:13px;}',
+      '.sw-discovery-form{margin:0;}',
+      '.sw-directory-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:220px;padding:28px;text-align:center;color:var(--dsw-alias-label-tertiary);}',
+      '.sw-directory-state p{max-width:100%;margin:0;font-size:13px;line-height:20px;overflow-wrap:anywhere;}',
+      '.sw-directory-state.is-error{color:var(--dsw-alias-state-error-primary);}',
+      '.sw-directory-results{display:flex;flex-direction:column;gap:10px;}',
+      '.sw-directory-summary{display:flex;justify-content:space-between;gap:12px;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary);}',
+      '.sw-directory-summary span:last-child{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}',
+      '.sw-directory-list{display:flex;flex-direction:column;gap:10px;list-style:none;padding:0;margin:0;}',
+      '.sw-directory-card{display:flex;align-items:center;gap:16px;min-width:0;padding:16px;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg,10px);background:var(--dsw-alias-bg-layer-1);}',
+      '.sw-directory-card:hover{border-color:var(--dsw-alias-border-l4);}',
+      '.sw-directory-card-actions{display:flex;flex:none;align-items:center;gap:6px;}',
+      '.sw-directory-card-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;}',
+      '.sw-directory-card-title{display:flex;align-items:center;flex-wrap:wrap;gap:8px;}',
+      '.sw-directory-card-title strong{font-size:14px;font-weight:500;line-height:21px;overflow-wrap:anywhere;}',
+      '.sw-directory-card-meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary);}',
+      '.sw-directory-card-meta span{overflow-wrap:anywhere;}',
+      '.sw-directory-unsupported{margin:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere;}',
+      '.sw-preview-back .sw-btn{height:28px;padding:0 8px;font-size:12px;border-color:transparent;background:none;color:var(--dsw-alias-label-secondary);}',
+      '.sw-preview-source{display:flex;flex-direction:column;gap:8px;padding-bottom:14px;border-bottom:.5px solid var(--dsw-alias-border-l2);}',
+      '.sw-preview-source-heading{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 12px;}',
+      '.sw-preview-source-heading strong{font-size:14px;font-weight:500;overflow-wrap:anywhere;}',
+      '.sw-preview-source-heading>span{font-size:12px;color:var(--dsw-alias-label-tertiary);}',
+      '.sw-preview-tools{display:flex;align-items:center;flex-wrap:wrap;gap:10px;}',
+      '.sw-preview-tools>.sw-input{flex:1 1 240px;min-width:0;}',
+      '.sw-preview-tools .sw-selection-toolbar{margin-left:auto;}',
+      '.sw-source-choice{display:flex;align-items:center;gap:10px;padding-right:12px;}',
+      '.sw-source-choice.is-selected{background:var(--dsw-alias-interactive-bg-hover);}',
+      '.sw-source-choice:first-child{border-radius:var(--dsw-radius-lg,10px) var(--dsw-radius-lg,10px) 0 0;}',
+      '.sw-source-choice:last-child{border-radius:0 0 var(--dsw-radius-lg,10px) var(--dsw-radius-lg,10px);}',
+      '.sw-source-choice>label{flex:1;min-width:0;}',
+      '.sw-source-choice-path{font-size:11px;line-height:17px;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere;}',
+      '.sw-preview-update{flex:none;height:28px;font-size:12px;padding:0 8px;}',
+      '.sw-add-drawer .sw-source-error>span{flex:1;min-width:0;overflow-wrap:anywhere;}',
+      '.sw-add-drawer .sw-source-error>.sw-btn{flex:none;height:26px;font-size:12px;padding:0 8px;}',
+      '@media(max-width:520px){.sw-add-drawer .sw-drawer-body{padding:12px 16px 24px;}.sw-add-drawer .sw-drawer-head{padding:18px 16px 14px;}.sw-add-drawer .sw-drawer-foot{padding:12px 16px;}.sw-directory-card{align-items:flex-start;flex-direction:column;gap:12px;padding:14px;}.sw-directory-card>.sw-btn{align-self:flex-end;}.sw-source-choice{flex-wrap:wrap;}.sw-preview-update{margin:0 0 10px 34px;}}',
 
       // toast
       '.sw-toast{position:fixed;left:50%;bottom:28px;z-index:90;display:flex;align-items:center;gap:8px;max-width:min(560px,100vw - 48px);min-height:36px;padding:6px 8px 6px 12px;transform:translateX(-50%);border-radius:var(--dsw-radius-lg,10px);font-size:13px;line-height:20px;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-overlay,var(--dsw-alias-bg-layer-1));border:.5px solid var(--dsw-alias-border-l2);box-shadow:var(--dsw-elevation-prominent,var(--dsw-shadow-lv2,0 8px 24px rgba(0,0,0,.2)));animation:sw-pop .14s ease-out;}',

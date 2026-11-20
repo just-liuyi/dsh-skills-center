@@ -27,6 +27,7 @@
 import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
+import { createSourcesManager, serializeSkills, parseSkillMetadata } from './skills-sources.js'
 
 /** This plugin's package name: the Loader row name and the client module id. */
 export const name = '@local/dsh-skills-center'
@@ -60,6 +61,10 @@ const SKILL_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 function dshHome() {
   return resolve(process.env.DSH_HOME || join(homedir(), '.dsh'))
+}
+
+function agentsHome() {
+  return resolve(process.env.DSH_AGENTS_HOME || join(homedir(), '.agents'))
 }
 
 function skillsRoot() {
@@ -161,12 +166,12 @@ function skillRoots(cwd) {
     { root: join(cwd, '.dsh', 'skills'), source: 'project-dsh', writable: false },
     { root: join(cwd, '.agents', 'skills'), source: 'project-agents', writable: false },
     { root: join(dshHome(), 'skills'), source: 'user-dsh', writable: true },
-    { root: join(homedir(), '.agents', 'skills'), source: 'user-agents', writable: true },
+    { root: join(agentsHome(), 'skills'), source: 'user-agents', writable: true },
   ]
 }
 
 function userSkillRoots() {
-  return [join(dshHome(), 'skills'), join(homedir(), '.agents', 'skills')]
+  return [join(dshHome(), 'skills'), join(agentsHome(), 'skills')]
 }
 
 /** Read the flat `key: value` pairs of a skill's frontmatter; the body stays untouched. */
@@ -186,6 +191,7 @@ function parseSkillFile(text) {
     }
     data[match[1]] = value
   }
+  try { Object.assign(data, parseSkillMetadata(text)) } catch { /* keep invalid files visible for repair */ }
   return { data, body }
 }
 
@@ -225,7 +231,7 @@ async function scanRoot(root, source, writable) {
       provider: 'filesystem',
       path,
       modelInvocable: !truthy(data['disable-model-invocation']),
-      userInvocable: !truthy(data['user-invocable']),
+      userInvocable: !/^(false|no|off|0)$/i.test(String(data['user-invocable'] ?? '').trim()),
       writable,
       invalid: !data.name || !data.description,
     })
@@ -239,7 +245,7 @@ async function scanRoot(root, source, writable) {
  * root scope, where a preset's filesystem provider is not visible, so the disk
  * scan is what makes `~/.dsh/skills` manageable.
  */
-async function skillCatalog(ctx) {
+async function rawSkillCatalog(ctx) {
   const cwd = viewCwd(ctx)
   const rows = new Map()
 
@@ -282,6 +288,14 @@ async function skillCatalog(ctx) {
   }
 }
 
+function sourcesManager(ctx) {
+  return createSourcesManager({ home: dshHome(), listLocal: () => rawSkillCatalog(ctx) })
+}
+
+async function skillCatalog(ctx) {
+  return sourcesManager(ctx).decorate(await rawSkillCatalog(ctx))
+}
+
 async function listSkills(ctx) {
   return skillCatalog(ctx)
 }
@@ -304,6 +318,11 @@ async function skillDetail(ctx, input) {
       content: body.replace(/^\n+/, ''),
       path: row.path,
       writable: row.writable,
+      editable: row.editable !== false && row.writable,
+      origin: row.origin,
+      managed: row.managed,
+      sourceId: row.sourceId,
+      sourceLabel: row.sourceLabel,
     }
   }
   const registry = ctx.get('skills')
@@ -329,6 +348,11 @@ async function saveSkill(ctx, input) {
   if (!description) throw new Error('description is required')
 
   const original = String(input.originalName || '').trim()
+  await sourcesManager(ctx).assertEditable({ name: skillName, originalName: original })
+  const known = await diskSkill(ctx, original || skillName)
+  if (known?.managed || known?.editable === false) throw new Error('在线来源技能正文只读，请更新来源或另存为本地技能')
+  const targetKnown = original && original !== skillName ? await diskSkill(ctx, skillName) : known
+  if (targetKnown?.managed) throw new Error('目标名称属于在线来源技能')
   const dir = join(skillsRoot(), skillName)
   // A write under a name that is not this skill's own name replaces whatever is already there, so refuse it instead of
   // silently overwriting a skill (a rename onto an existing name, or an unintended create).
@@ -364,6 +388,7 @@ async function removeSkill(ctx, input) {
   const row = await diskSkill(ctx, skillName)
   if (!row) throw new Error(`no skill file named ${skillName}`)
   if (!row.writable) throw new Error('this skill is read-only: it lives outside the user skill roots')
+  if (await sourcesManager(ctx).remove(input, row)) return { removed: skillName }
   const target = row.path.endsWith('SKILL.md') ? dirname(row.path) : row.path
   if (!userSkillRoots().some((root) => within(root, target))) {
     throw new Error('refusing to remove outside the user skill roots')
@@ -377,11 +402,7 @@ async function setSkillInvocation(ctx, input) {
   const row = await diskSkill(ctx, skillName)
   if (!row) throw new Error('this skill has no file to edit')
   if (!row.writable) throw new Error('this skill is read-only: it lives outside the user skill roots')
-  const { front, body } = splitSkill(await readFile(row.path, 'utf8'))
-  let next = setFrontKey(front, 'disable-model-invocation', input.modelInvocable === false ? 'true' : undefined)
-  next = setFrontKey(next, 'user-invocable', input.userInvocable === false ? 'false' : undefined)
-  await writeFile(row.path, `---\n${next}\n---\n\n${body.replace(/^\n+/, '')}`, 'utf8')
-  return { name: row.name }
+  return sourcesManager(ctx).setInvocation(input, row)
 }
 
 /* ── MCP servers ──────────────────────────────────────────────────────────────────────────────────────────── */
@@ -642,9 +663,15 @@ async function setPromptEnabled(ctx, input) {
 
 /* ── dispatch ─────────────────────────────────────────────────────────────────────────────────────────────── */
 
+async function listTools(ctx) {
+  const tools = ctx.get('tools')
+  if (!tools) return { supported: false, reason: 'tools service is not mounted', rows: [] }
+  return { supported: true, rows: tools.schemas().map((tool) => ({ name: tool.name, description: tool.description || '', parameters: tool.parameters || {}, required: tool.parameters?.required || [] })).sort((a, b) => a.name.localeCompare(b.name)) }
+}
+
 async function catalog(ctx) {
-  const [skills, mcp, prompts] = await Promise.all([listSkills(ctx), listMcp(ctx), listPrompts(ctx)])
-  return { skills, mcp, prompts, home: dshHome() }
+  const [skills, mcp, prompts, tools] = await Promise.all([listSkills(ctx), listMcp(ctx), listPrompts(ctx), listTools(ctx)])
+  return { skills, mcp, prompts, tools, home: dshHome() }
 }
 
 /**
@@ -736,6 +763,14 @@ const ACTIONS = {
   'skill.save': saveSkill,
   'skill.remove': removeSkill,
   'skill.setInvocation': setSkillInvocation,
+  'source.search': (ctx, input) => sourcesManager(ctx).search(input),
+  'source.preview': (ctx, input) => sourcesManager(ctx).preview(input),
+  'source.add': (ctx, input) => sourcesManager(ctx).add(input),
+  'source.install': (ctx, input) => sourcesManager(ctx).install(input),
+  'source.refresh': (ctx, input) => sourcesManager(ctx).refresh(input),
+  'source.check': (ctx, input) => sourcesManager(ctx).check(input),
+  'skill.update': (ctx, input) => sourcesManager(ctx).update(input),
+  'tools.list': listTools,
   'mcp.save': saveMcp,
   'mcp.remove': removeMcp,
   'mcp.setEnabled': setMcpEnabled,
@@ -750,7 +785,9 @@ export async function dispatch(ctx, action, payload) {
   const handler = ACTIONS[action]
   if (!handler) return { ok: false, error: `unknown action: ${action}` }
   try {
-    return { ok: true, value: await handler(ctx, payload ?? {}) }
+    const invoke = () => handler(ctx, payload ?? {})
+    const value = action !== 'source.search' && (action === 'catalog' || action.startsWith('skill.') || action.startsWith('source.')) ? await serializeSkills(invoke) : await invoke()
+    return { ok: true, value }
   } catch (error) {
     return { ok: false, error: String(error?.message ?? error) }
   }
