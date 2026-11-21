@@ -1,4 +1,4 @@
-/*! @local/dsh-skills-center 1.8.4 client half: the 技能中心 sidebar entry and the management panel. */
+/*! @local/dsh-skills-center 1.9.0 client half: the 技能中心 sidebar entry and the management panel. */
 window.__ModuleLoader__.load({
   id: '@local/dsh-skills-center',
   factory: (require) => {
@@ -13,15 +13,15 @@ window.__ModuleLoader__.load({
     var SKILL_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
     var SERVER_NAME = /^[A-Za-z0-9_-]{1,32}$/
     /** Local skill creation stays on disk. The Skills toolbar adds online sources. */
-    var CREATABLE = { skills: false, mcp: true, prompts: true, tools: false }
+    var CREATABLE = { skills: false, mcp: true, prompts: true, tools: false, components: false }
 
     /* ── text ──────────────────────────────────────────────────────────────────────────────────────────────── */
 
     var STR = {
       zh: {
-        title: '技能中心',
-        intro: '统一管理 Skill、MCP 服务器与提示词注入，改动即时生效。',
-        tabs: { skills: 'Skill', mcp: 'MCP', prompts: '提示词', tools: 'Tools' },
+        title: '能力中心',
+        intro: '统一管理 Skill、MCP 服务器、提示词、工具与组件更新，改动即时生效。',
+        tabs: { skills: 'Skill', mcp: 'MCP', prompts: '提示词', tools: 'Tools', components: '组件' },
         search: '搜索',
         searchHint: '按 / 聚焦搜索',
         refresh: '刷新',
@@ -145,6 +145,17 @@ window.__ModuleLoader__.load({
           source: '来源', openSource: '打开 GitHub 来源', version: '版本', managedNote: '此技能由在线来源管理。内容仅供查看，启停和更新请在列表中操作。',
           busy: '任务进行中，请等待完成后关闭。', inspect: '查看并选择安装', notChecked: '尚未检查更新', upstreamRemoved: '上游已移除',
         },
+        components: {
+          hint: '检查本机通过 npm 安装的组件在 registry 上的最新版本，并可一键更新。git、本地链接等来源没有可比对的版本。',
+          check: '检查更新', checking: '正在检查…', updateAll: '全部更新', update: '更新', updating: '更新中…',
+          installed: '已安装', latest: '最新', upToDate: '已是最新', available: '可更新', failed: '检查失败', prerelease: '预发布', disabled: '已停用',
+          neverChecked: '尚未检查', lastChecked: '上次检查', empty: '没有通过 npm 安装的组件。', allCurrent: '所有 npm 组件都是最新版本。',
+          skippedTitle: '不支持自动更新的组件', skippedHint: '这些组件不是从 npm 安装的，无法按版本号比较：',
+          reasonGit: 'git 来源', reasonLink: '本地链接', reasonFile: '本地文件', reasonUrl: '网址/压缩包', reasonAlias: 'npm 别名', reasonOther: '来源未知',
+          updated: '已更新，重启 DeepSeek Harness 后加载新代码。', updatedOff: '已更新；该组件原本停用，仍保持停用。',
+          unsupported: '当前环境没有插件管理器，无法检查和更新组件。',
+          footer: '更新由宿主插件管理器执行：安装目标版本并保持原有启用状态，失败时恢复原版本。替换过的插件需要重启 DeepSeek Harness 才会加载新代码。',
+        },
         busyWrite: '上一次修改还在保存，请稍后再试。',
         reloadHint: '宿主会重新加载该服务器，现有连接可能短暂中断。',
         unsupported: {
@@ -154,9 +165,9 @@ window.__ModuleLoader__.load({
         },
       },
       en: {
-        title: 'Skills Center',
-        intro: 'Manage skills, MCP servers and prompt injections in one place. Changes apply immediately.',
-        tabs: { skills: 'Skills', mcp: 'MCP', prompts: 'Prompts', tools: 'Tools' },
+        title: 'Capability Center',
+        intro: 'Manage skills, MCP servers, prompts, tools and component updates in one place. Changes apply immediately.',
+        tabs: { skills: 'Skills', mcp: 'MCP', prompts: 'Prompts', tools: 'Tools', components: 'Components' },
         search: 'Search',
         searchHint: 'Press / to search',
         refresh: 'Refresh',
@@ -279,6 +290,17 @@ window.__ModuleLoader__.load({
           summary: function (installed, total, on) { return installed + ' managed · ' + on + ' enabled' },
           source: 'Source', openSource: 'Open GitHub source', version: 'Version', managedNote: 'This skill is managed by an online source. View its content here; use the list to toggle or update it.',
           busy: 'A task is running. Wait for it to finish before closing.', inspect: 'View and choose skills', notChecked: 'Updates not checked yet', upstreamRemoved: 'Removed upstream',
+        },
+        components: {
+          hint: 'Check every component installed from npm against its newest registry release and update it in one click. Git, local links and other sources have no comparable version.',
+          check: 'Check for updates', checking: 'Checking…', updateAll: 'Update all', update: 'Update', updating: 'Updating…',
+          installed: 'Installed', latest: 'Latest', upToDate: 'Up to date', available: 'Update available', failed: 'Check failed', prerelease: 'Prerelease', disabled: 'Disabled',
+          neverChecked: 'Never checked', lastChecked: 'Last checked', empty: 'No component was installed from npm.', allCurrent: 'Every npm component is up to date.',
+          skippedTitle: 'Components without automatic updates', skippedHint: 'These were not installed from npm, so there is no version to compare:',
+          reasonGit: 'git source', reasonLink: 'local link', reasonFile: 'local file', reasonUrl: 'URL / tarball', reasonAlias: 'npm alias', reasonOther: 'unknown source',
+          updated: 'Updated. The new code loads after DeepSeek Harness restarts.', updatedOff: 'Updated. The component was disabled and stays disabled.',
+          unsupported: 'This app has no plugin manager, so components cannot be checked or updated.',
+          footer: 'The host plugin manager performs the update: it installs the target version with its previous on/off state and restores the old one on failure. A replaced plugin loads its new code after DeepSeek Harness restarts.',
         },
         busyWrite: 'The previous change is still saving; try again in a moment.',
         reloadHint: 'The host reloads this server; existing connections may drop briefly.',
@@ -780,6 +802,9 @@ window.__ModuleLoader__.load({
       var collapsed = collapsedState[0], setCollapsed = collapsedState[1]
       var toolState = React.useState(null)
       var toolDetail = toolState[0], setToolDetail = toolState[1]
+      // npm components: loaded lazily when the tab is opened, because the check reaches the registry.
+      var compState = React.useState({ phase: 'idle', loading: false, packages: [], skipped: [], error: null, at: null, supported: true, reason: null, running: null, notices: {} })
+      var comp = compState[0], setComp = compState[1]
 
       var lockRef = React.useRef(false)
       var aliveRef = React.useRef(true)
@@ -787,6 +812,7 @@ window.__ModuleLoader__.load({
       var toastTimer = React.useRef(null)
       var sourceRequestRef = React.useRef(0)
       var sourceReadAbortRef = React.useRef(null)
+      var compRequestRef = React.useRef(0)
 
       React.useEffect(function () {
         aliveRef.current = true
@@ -815,6 +841,29 @@ window.__ModuleLoader__.load({
       }, [])
 
       React.useEffect(function () { load(false) }, [load])
+
+      var loadComponents = React.useCallback(async function (force) {
+        var request = ++compRequestRef.current
+        setComp(function (prev) { return Object.assign({}, prev, { loading: true, error: null }) })
+        try {
+          var value = await call('component.list', { force: force === true })
+          if (!aliveRef.current || request !== compRequestRef.current) return
+          setComp(function (prev) {
+            // Keep per-row outcome notes: a reload follows every update and must not erase its own result.
+            return { phase: 'ready', loading: false, packages: value.packages || [], skipped: value.skipped || [], at: value.at || null, supported: value.supported !== false, reason: value.reason || null, running: null, notices: prev.notices || {} }
+          })
+        } catch (error) {
+          if (!aliveRef.current || request !== compRequestRef.current) return
+          setComp(function (prev) { return Object.assign({}, prev, { loading: false, phase: 'error', error: String((error && error.message) || error) }) })
+        }
+      }, [])
+
+      // The registry is only read once the user opens the tab, and never again on its own.
+      React.useEffect(function () {
+        if (tab !== 'components') return
+        if (comp.phase !== 'idle' || comp.loading) return
+        loadComponents(false)
+      }, [tab, comp.phase, comp.loading, loadComponents])
 
       // `/` focuses the search box, the way host lists do.
       React.useEffect(function () {
@@ -858,12 +907,15 @@ window.__ModuleLoader__.load({
         mcp: data && data.mcp ? data.mcp.rows || [] : [],
         prompts: data && data.prompts ? data.prompts.rows || [] : [],
         tools: data && data.tools ? data.tools.rows || [] : [],
+        // Components come from their own lazy RPC, never from the catalog.
+        components: comp.packages || [],
       }
       var supported = {
         skills: !data || data.skills.supported !== false,
         mcp: !data || data.mcp.supported !== false,
         prompts: !data || data.prompts.supported !== false,
         tools: !data || Boolean(data.tools && data.tools.supported !== false),
+        components: comp.supported !== false,
       }
       // The main list contains installed skills only; uninstalled repository entries stay in link previews.
       var all = lists[tab].filter(function (row) { return tab !== 'skills' || row.installed !== false }).map(function (row) {
@@ -1112,6 +1164,65 @@ window.__ModuleLoader__.load({
         setPending(function (p) { var n = Object.assign({}, p); delete n[key]; return n })
         if (outcome === 'ok') notify('ok', text.online.updated)
         else if (outcome === 'busy') notify('error', text.busyWrite)
+      }
+
+      /* npm components */
+
+      /** The host answers how the update ended; a persisted change can still report `application: 'failed'`. */
+      function componentOutcome(result) {
+        var application = result && result.application
+        var failure = result && result.error
+        if (application === 'applied' || application === 'restart-required') return { kind: 'ok', text: text.components.updated }
+        if (application === 'failed') {
+          var detail = failure ? [failure.code, failure.diagnostic].filter(Boolean).join(': ') : ''
+          return { kind: 'error', text: text.components.failed + (detail ? ': ' + detail : '') }
+        }
+        if (result && result.nextStep) return { kind: 'info', text: result.nextStep }
+        return { kind: 'info', text: text.components.updated }
+      }
+
+      function componentNotice(name, notice) {
+        setComp(function (prev) {
+          var notices = Object.assign({}, prev.notices)
+          if (notice) notices[name] = notice
+          else delete notices[name]
+          return Object.assign({}, prev, { notices: notices })
+        })
+      }
+
+      async function updateComponent(name) {
+        if (writing) return 'busy'
+        setComp(function (prev) { return Object.assign({}, prev, { running: name }) })
+        setOperation(text.components.updating + ' ' + name)
+        var failure = null
+        var result = null
+        var outcome = await withWrite(async function () {
+          try { result = await call('component.update', { name: name }) }
+          catch (error) { failure = String((error && error.message) || error); throw error }
+        })
+        if (!aliveRef.current) return outcome
+        setOperation(null)
+        setComp(function (prev) { return Object.assign({}, prev, { running: null }) })
+        if (outcome === 'ok') {
+          var notice = componentOutcome(result)
+          componentNotice(name, notice)
+          notify(notice.kind === 'error' ? 'error' : 'ok', name + ' · ' + notice.text)
+        } else if (outcome === 'failed' && failure) {
+          componentNotice(name, { kind: 'error', text: failure })
+        } else if (outcome === 'busy') {
+          componentNotice(name, { kind: 'error', text: text.busyWrite })
+        }
+        await loadComponents(true)
+        return outcome
+      }
+
+      async function updateAllComponents() {
+        if (writing) return
+        var targets = comp.packages.filter(function (row) { return row.updateAvailable && !row.error }).map(function (row) { return row.name })
+        for (var i = 0; i < targets.length; i += 1) {
+          if (!aliveRef.current) return
+          await updateComponent(targets[i])
+        }
       }
 
       /* drafts */
@@ -1432,6 +1543,92 @@ window.__ModuleLoader__.load({
             : h('p', { className: 'sw-group-hint' }, text.online.noSkills)))
       }
 
+      /* npm components: one row per updatable bundle, plus the sources that cannot be compared */
+
+      function componentClock(iso) {
+        if (!iso) return text.components.neverChecked
+        var at = new Date(iso)
+        if (Number.isNaN(at.getTime())) return text.components.neverChecked
+        try { return at.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) } catch (error) { return at.toISOString().slice(11, 16) }
+      }
+
+      function componentReason(reason) {
+        var c = text.components
+        if (reason === 'git') return c.reasonGit
+        if (reason === 'link') return c.reasonLink
+        if (reason === 'file') return c.reasonFile
+        if (reason === 'url') return c.reasonUrl
+        if (reason === 'alias') return c.reasonAlias
+        return c.reasonOther
+      }
+
+      function renderComponentRow(row) {
+        var c = text.components
+        var busy = comp.running === row.name
+        var notice = comp.notices[row.name]
+        var tags = []
+        if (row.error) tags.push(h(Tag, { key: 'err', tone: 'error' }, c.failed))
+        else if (row.updateAvailable) tags.push(h(Tag, { key: 'up', tone: 'ok' }, c.available))
+        else tags.push(h(Tag, { key: 'ok', tone: 'quiet' }, c.upToDate))
+        if (row.latest && row.stable === false) tags.push(h(Tag, { key: 'pre', tone: 'quiet' }, c.prerelease))
+        if (row.enabled === false) tags.push(h(Tag, { key: 'off', tone: 'quiet' }, c.disabled))
+        var versions = c.installed + ' ' + (row.installed || '—') + ' · ' + c.latest + ' ' + (row.latest || (row.error ? '—' : '…'))
+        return h('li', { key: row.name, className: 'sw-row sw-comp-row', 'data-pending': busy ? 'true' : undefined },
+          h('span', { className: 'sw-row-icon' }, h(Icon, { name: 'plug', size: 18 })),
+          h('div', { className: 'sw-row-main' },
+            h('div', { className: 'sw-row-title' },
+              h('span', { className: 'sw-row-name sw-mono' }, row.name), tags),
+            row.description ? h('p', { className: 'sw-row-desc' }, row.description) : null,
+            h('p', { className: 'sw-comp-versions sw-mono' }, versions),
+            row.error ? h('p', { className: 'sw-comp-note sw-comp-note-error' }, c.failed + ': ' + row.error) : null,
+            busy ? h('p', { className: 'sw-comp-note' }, c.updating) : null,
+            notice ? h('p', { className: 'sw-comp-note sw-comp-note-' + notice.kind, role: notice.kind === 'error' ? 'alert' : 'status' }, notice.text) : null),
+          h('div', { className: 'sw-row-end' },
+            h('div', { className: 'sw-row-actions' },
+              h(Button, { variant: row.updateAvailable ? 'primary' : null, icon: 'refresh',
+                disabled: writing || !row.updateAvailable || Boolean(row.error),
+                onClick: function () { updateComponent(row.name) } }, busy ? c.updating : c.update))))
+      }
+
+      function renderComponents() {
+        var c = text.components
+        if (!comp.supported) return h(EmptyState, { icon: 'warn', title: c.skippedTitle, text: c.unsupported })
+        var pending = comp.packages.filter(function (row) { return row.updateAvailable }).length
+        return h('div', { className: 'sw-components' },
+          h('div', { className: 'sw-comp-head' },
+            h('div', { className: 'sw-comp-toolbar' },
+              h(Button, { icon: 'refresh', disabled: comp.loading || writing, onClick: function () { loadComponents(true) } },
+                comp.loading ? c.checking : c.check),
+              h(Button, { variant: pending ? 'primary' : null, icon: 'refresh', disabled: comp.loading || writing || !pending, onClick: updateAllComponents },
+                c.updateAll + (pending ? ' (' + pending + ')' : ''))),
+            h('span', { className: 'sw-comp-meta' }, c.lastChecked + ' · ' + componentClock(comp.at))),
+          h('p', { className: 'sw-group-hint' }, c.hint),
+          comp.error ? h('div', { className: 'sw-banner sw-source-error', role: 'alert' }, h(Icon, { name: 'warn' }), h('span', null, comp.error),
+            h(Button, { disabled: comp.loading || writing, onClick: function () { loadComponents(true) } }, text.retry)) : null,
+          comp.loading && !comp.packages.length ? h(SkeletonRows) : null,
+          !comp.loading && comp.phase === 'ready' && !comp.packages.length
+            ? h(EmptyState, { icon: 'plug', title: c.empty, text: c.footer })
+            : null,
+          comp.packages.length
+            ? h('ul', { className: 'sw-rows' }, comp.packages.map(renderComponentRow))
+            : null,
+          comp.phase === 'ready' && comp.packages.length && !pending
+            ? h('p', { className: 'sw-comp-note sw-comp-note-ok' }, c.allCurrent)
+            : null,
+          comp.skipped.length
+            ? h('details', { className: 'sw-comp-skipped' },
+              h('summary', null, c.skippedTitle + ' (' + comp.skipped.length + ')'),
+              h('p', { className: 'sw-group-hint' }, c.skippedHint),
+              h('ul', { className: 'sw-rows' }, comp.skipped.map(function (item) {
+                return h('li', { key: item.name, className: 'sw-comp-skipped-row' },
+                  h('span', { className: 'sw-mono' }, item.name + (item.version ? ' ' + item.version : '')),
+                  h('span', { className: 'sw-comp-note' }, ' · ' + componentReason(item.reason)),
+                  item.source ? h('code', { className: 'sw-mono sw-comp-source', title: item.source }, String(item.source)) : null)
+              })))
+            : null,
+          h('p', { className: 'sw-comp-note' }, c.footer))
+      }
+
       function groupsFor(kind, rows) {
         if (kind === 'skills') {
           return [
@@ -1451,7 +1648,7 @@ window.__ModuleLoader__.load({
 
       /* render */
 
-      var tabs = ['skills', 'mcp', 'prompts', 'tools']
+      var tabs = ['skills', 'mcp', 'prompts', 'tools', 'components']
       // Local skills keep their existing editors; online skills enter through source preview.
       var canCreate = (tab === 'skills' || CREATABLE[tab]) && Boolean(supported[tab])
       // An empty list is never "filtered": the empty state has to stay readable even when a search was typed.
@@ -1465,6 +1662,8 @@ window.__ModuleLoader__.load({
           h(Icon, { name: 'warn' }),
           h('span', null, text.loadFailed + ': ' + state.error),
           h(Button, { onClick: function () { load(false) } }, text.retry))
+      } else if (tab === 'components') {
+        content = renderComponents()
       } else if (!visible.length) {
         content = filtering
           ? h(EmptyState, {
@@ -1711,9 +1910,9 @@ window.__ModuleLoader__.load({
             h('p', { className: 'sw-intro' }, text.intro)),
           h('div', { className: 'sw-toolbar' },
             h(IconButton, {
-              icon: 'refresh', label: text.refresh,
-              disabled: state.phase === 'loading' || writing,
-              onClick: function () { load(false) },
+              icon: 'refresh', label: tab === 'components' ? text.components.check : text.refresh,
+              disabled: state.phase === 'loading' || writing || (tab === 'components' && comp.loading),
+              onClick: function () { if (tab === 'components') loadComponents(true); else load(false) },
             }),
             canCreate ? h(Button, {
               variant: 'primary', icon: 'plus', disabled: writing, title: tab === 'skills' ? text.online.addHint : text.addHint[tab],
@@ -1724,22 +1923,27 @@ window.__ModuleLoader__.load({
           h('nav', { className: 'sw-tabs', role: 'tablist' },
             tabs.map(function (id) {
               var total = lists[id].filter(function (row) { return id !== 'skills' || row.installed !== false }).length
+              // The component tab advertises pending updates instead of its row count.
+              var badge = id === 'components'
+                ? (comp.packages.filter(function (row) { return row.updateAvailable }).length || null)
+                : (data ? total : null)
               return h('button', {
                 key: id, type: 'button', role: 'tab',
                 'aria-selected': tab === id ? 'true' : 'false',
                 'data-active': tab === id ? 'true' : 'false',
                 className: 'sw-tab',
                 onClick: function () { setTab(id); setFilter('all') },
-              }, text.tabs[id], data ? h('span', { className: 'sw-tab-count' }, String(total)) : null)
+              }, text.tabs[id], badge !== null ? h('span', { className: 'sw-tab-count' }, String(badge)) : null)
             })),
 
-          !supported[tab] ? h('div', { className: 'sw-banner sw-banner-warn' }, h(Icon, { name: 'warn' }), h('span', null, text.unsupported[tab])) : null,
+          !supported[tab] ? h('div', { className: 'sw-banner sw-banner-warn' }, h(Icon, { name: 'warn' }),
+            h('span', null, tab === 'components' ? text.components.unsupported : text.unsupported[tab])) : null,
 
           operation ? h('div', { className: 'sw-banner', role: 'status', 'aria-live': 'polite' }, h(Icon, { name: 'refresh' }), h('span', null, operation)) : null,
           state.phase === 'error' && data ? h('div', { className: 'sw-banner sw-source-error', role: 'alert' }, h(Icon, { name: 'warn' }), h('span', null, text.loadFailed + ': ' + state.error),
             h(Button, { disabled: writing, onClick: function () { load(false) } }, text.retry)) : null,
 
-          h('div', { className: 'sw-filters' },
+          tab !== 'components' ? h('div', { className: 'sw-filters' },
             h('label', { className: 'sw-search' },
               h(Icon, { name: 'search', className: 'sw-search-icon' }),
               h('input', {
@@ -1764,7 +1968,8 @@ window.__ModuleLoader__.load({
               ],
               onChange: setFilter,
             }),
-            h('span', { className: 'sw-stats' }, text.stats(installedRows.length, activeCount))),
+            h('span', { className: 'sw-stats' }, text.stats(installedRows.length, activeCount)))
+            : null,
 
           content),
 
@@ -1994,6 +2199,25 @@ window.__ModuleLoader__.load({
       '.sw-source-meta code{font:inherit;font-family:var(--dsw-font-mono,monospace);}',
       '.sw-source-status{margin:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;}',
       '.sw-source-status.is-error,.sw-source-error{color:var(--dsw-alias-state-error-primary);}',
+
+      // npm components: same rows as skills, plus a version line and a skipped list
+      '.sw-components{display:flex;flex-direction:column;gap:12px;}',
+      '.sw-comp-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;}',
+      '.sw-comp-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}',
+      '.sw-comp-meta{margin-left:auto;font-size:12px;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums;}',
+      '.sw-comp-row{align-items:flex-start;}',
+      '.sw-comp-row .sw-row-main{gap:2px;}',
+      '.sw-comp-versions{margin:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary);}',
+      '.sw-comp-note{margin:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;}',
+      '.sw-comp-note-error{color:var(--dsw-alias-state-error-primary);}',
+      '.sw-comp-note-ok{color:var(--dsw-alias-state-success-primary);}',
+      '.sw-comp-skipped{border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg,10px);padding:10px 12px;}',
+      '.sw-comp-skipped>summary{cursor:pointer;font-size:13px;color:var(--dsw-alias-label-secondary);}',
+      '.sw-comp-skipped>summary:focus-visible{' + FOCUS + 'border-radius:4px;}',
+      '.sw-comp-skipped .sw-rows{margin-top:6px;}',
+      '.sw-comp-skipped-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12px;line-height:18px;padding:4px 0;}',
+      '.sw-comp-source{overflow-wrap:anywhere;color:var(--dsw-alias-label-tertiary);}',
+      '@media(max-width:520px){.sw-comp-meta{margin-left:0;}}',
       '.sw-online-rows .sw-row-actions{opacity:1;gap:4px;}',
       '.sw-online-rows .sw-row-end{gap:8px;}',
       '.sw-online-rows .sw-row-actions .sw-btn{height:28px;font-size:12px;padding:0 8px;}',

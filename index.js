@@ -28,6 +28,7 @@ import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promise
 import { homedir } from 'node:os'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { createSourcesManager, serializeSkills, parseSkillMetadata } from './skills-sources.js'
+import { createComponents } from './components.js'
 
 /** This plugin's package name: the Loader row name and the client module id. */
 export const name = '@local/dsh-skills-center'
@@ -669,6 +670,32 @@ async function listTools(ctx) {
   return { supported: true, rows: tools.schemas().map((tool) => ({ name: tool.name, description: tool.description || '', parameters: tool.parameters || {}, required: tool.parameters?.required || [] })).sort((a, b) => a.name.localeCompare(b.name)) }
 }
 
+/** One component service per plugin instance: its registry cache and single-flight guard must outlive a call. */
+const componentServices = new WeakMap()
+
+function componentsFor(ctx) {
+  let service = componentServices.get(ctx)
+  if (!service) {
+    const manager = typeof ctx.get === 'function' ? ctx.get('pluginManager') : undefined
+    if (!manager) return undefined
+    service = createComponents({ manager })
+    componentServices.set(ctx, service)
+  }
+  return service
+}
+
+async function listComponents(ctx, input) {
+  const service = componentsFor(ctx)
+  if (!service) return { supported: false, reason: 'pluginManager is not mounted', packages: [], skipped: [] }
+  return service.list({ force: input?.force === true })
+}
+
+async function updateComponent(ctx, input) {
+  const service = componentsFor(ctx)
+  if (!service) throw new Error('这个应用没有可用的插件管理器，无法更新组件')
+  return service.update(input)
+}
+
 async function catalog(ctx) {
   const [skills, mcp, prompts, tools] = await Promise.all([listSkills(ctx), listMcp(ctx), listPrompts(ctx), listTools(ctx)])
   return { skills, mcp, prompts, tools, home: dshHome() }
@@ -772,6 +799,8 @@ const ACTIONS = {
   'source.remove': (ctx, input) => sourcesManager(ctx).removeSource(input),
   'skill.update': (ctx, input) => sourcesManager(ctx).update(input),
   'tools.list': listTools,
+  'component.list': listComponents,
+  'component.update': updateComponent,
   'mcp.save': saveMcp,
   'mcp.remove': removeMcp,
   'mcp.setEnabled': setMcpEnabled,

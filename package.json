@@ -1,6 +1,6 @@
 {
   "name": "@local/dsh-skills-center",
-  "version": "1.8.4",
+  "version": "1.9.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,7 +8,7 @@
     "test:github": "node scripts/verify-github.mjs",
     "test:directory": "node scripts/verify-directory.mjs"
   },
-  "description": "技能中心：搜索 skills.sh、管理本地与在线 Skill、安装更新、MCP 和提示词 · Skills Center: search skills.sh, manage local and online skills, installs, updates, MCP servers and prompts",
+  "description": "能力中心：统一管理 Skill、MCP、提示词、工具与 npm 组件更新 · Capability Center: manage skills, MCP servers, prompts, tools and npm component updates",
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
@@ -18,6 +18,7 @@
   "files": [
     "index.js",
     "skills-sources.js",
+    "components.js",
     "client.js",
     "cordis.patch.yml",
     "locale/*.json",

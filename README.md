@@ -1,6 +1,24 @@
-# @local/dsh-skills-center · 技能中心
+# @local/dsh-skills-center · 能力中心
 
-左侧栏统一管理 **Skill、MCP 服务器、提示词注入与 Tools**。本地与在线技能展示在同一个 Skill 页中，以来源分组和标签区分；所有新添加技能默认停用，由用户手动开启。
+左侧栏统一管理 **Skill、MCP 服务器、提示词注入、Tools 与 npm 组件更新**。本地与在线技能展示在同一个 Skill 页中，以来源分组和标签区分；所有新添加技能默认停用，由用户手动开启。
+
+包名与数据目录沿用历史名称 `dsh-skills-center`（`@local/dsh-skills-center`、`<dshHome>/dsh-skills-center/`），这样已有的提示词与在线来源记录不会因为改名而丢失；界面上的显示名称是「能力中心 / Capability Center」。
+
+## 组件更新
+
+「组件」页签检查本机 DSH **通过 npm 安装的组件**（profile 里来源为 `name` / `name@版本` 的插件包）在 registry 上的最新版本，并可一键更新：
+
+| 安装来源 | 处理 |
+|---|---|
+| `name`、`name@1.2.3` | 查询 registry，支持更新 |
+| `github:`、`git+…` | 跳过（git 来源） |
+| `link:`、`file:`、本地路径 | 跳过（本地） |
+| `https://…` 压缩包、`npm:` 别名 | 跳过 |
+
+- 官方 npm 与 npmmirror 并行查询，取较新的 `dist-tags.latest`；结果缓存 60 秒，手动刷新时强制重新读取。
+- 更新由宿主插件管理器执行 `updateBundle(name, version)`：先移除当前版本，安装目标版本并恢复原有启用状态，目标装不上时恢复原版本。目标版本由宿主根据 registry 决定，客户端传入的版本号会被忽略。
+- 面板支持单个更新与「全部更新」；替换过的插件需要重启 DeepSeek Harness 才会加载新代码。
+- 不支持自动更新的组件列在「不支持自动更新的组件」里，并标注原因。
 
 ## Skill 管理
 
@@ -47,6 +65,7 @@
 | MCP | 新建、编辑、删除、启停；展示其他插件的服务器 | `dsh-switch-mcp` group，经 `configEditor` 持久化 |
 | 提示词 | 新建、编辑、启停、删除，按顺序注入系统提示词 | `<dshHome>/dsh-skills-center/store.json` |
 | Tools | 查看宿主提供的工具及参数 | 宿主工具注册表，只读 |
+| 组件 | 检查 npm 安装的组件版本并更新 | 宿主 `pluginManager`，不写本插件的数据目录 |
 
 `dshHome` 跟随 `DSH_HOME`，默认 `~/.dsh`。通用 Agent 用户技能目录跟随 `DSH_AGENTS_HOME`，默认 `~/.agents`。
 

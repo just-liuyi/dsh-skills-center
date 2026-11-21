@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Skills Center",
-    "description": "Manage local and online skills in one list, add skills directly from skills.sh search and enable them manually. New skills start disabled. Includes updates, MCP servers and prompts."
+    "title": "Capability Center",
+    "description": "Manage skills (local and online), MCP servers, prompt injections and tools, and check or update every npm-installed component. New skills start disabled until enabled by hand."
   }
 }
