@@ -1,4 +1,4 @@
-/*! @local/dsh-skills-center 1.9.3 client half: the 技能中心 sidebar entry and the management panel. */
+/*! @local/dsh-skills-center 1.9.4 client half: the 技能中心 sidebar entry and the management panel. */
 window.__ModuleLoader__.load({
   id: '@local/dsh-skills-center',
   factory: (require) => {
@@ -1809,13 +1809,14 @@ window.__ModuleLoader__.load({
           banner: sourceBusy ? h('div', { className: 'sw-banner', role: 'status', 'aria-live': 'polite' }, h(Icon, { name: 'refresh' }),
             h('span', null, operation || text.online.installing)) : null,
           footHint: preview ? text.online.selected(selectedCount) : '',
-          footer: [
+          // Without a preview or a notice the footer would only repeat the header close.
+          footer: preview || sourceDraft.notice ? [
             h('span', { key: 'gap', className: 'sw-grow' }),
             h(Button, { key: 'cancel', disabled: sourceBusy, onClick: !preview && sourceDraft.notice ? returnToSkillList : closeSource },
               preview ? text.cancel : sourceDraft.notice ? text.online.returnToList : text.close),
             preview ? h(Button, { key: 'install', variant: 'primary', disabled: sourceBusy || sourceReading || writing || !selectedCount, onClick: installSource },
               sourceBusy ? text.saving : text.online.installSelected) : null,
-          ],
+          ] : null,
         },
           !preview ? h('div', { className: 'sw-add-modes' }, h(Segmented, {
             label: text.online.add, value: sourceDraft.mode, disabled: sourceBusy,
@@ -1843,7 +1844,7 @@ window.__ModuleLoader__.load({
               if (sourceDraft.failedAdd) addDirectorySkill(sourceDraft.failedAdd)
               else previewSource(sourceDraft.url, sourceDraft.picked)
             } }, text.retry) : null) : null,
-          !preview ? directoryResults : null,
+          !preview && searchMode ? h('div', { className: 'sw-discovery-pane' + (sourceDraft.results.length ? '' : ' is-centered') }, directoryResults) : null,
           preview ? h('section', { className: 'sw-source-preview' },
             h('div', { className: 'sw-preview-source' },
               h('div', { className: 'sw-preview-source-heading' }, h('strong', null, preview.source.label), h('span', null, text.online.previewCount(previewSkills.length))),
@@ -2252,6 +2253,10 @@ window.__ModuleLoader__.load({
       '.sw-add-modes{display:flex;}',
       '.sw-add-modes .sw-seg{width:100%;padding:3px;gap:4px;}',
       '.sw-add-modes .sw-seg-item{flex:1;justify-content:center;height:32px;font-size:13px;}',
+      // The discovery body absorbs the leftover height; an empty result set is centred instead of leaving a void.
+      '.sw-discovery-pane{display:flex;flex-direction:column;flex:1;min-height:0;}',
+      '.sw-discovery-pane.is-centered{justify-content:center;}',
+      '.sw-add-drawer .sw-empty{border:0;background:none;padding:24px 16px;}',
       '.sw-discovery-form{margin:0;}',
       '.sw-directory-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:220px;padding:28px;text-align:center;color:var(--dsw-alias-label-tertiary);}',
       '.sw-directory-state p{max-width:100%;margin:0;font-size:13px;line-height:20px;overflow-wrap:anywhere;}',
