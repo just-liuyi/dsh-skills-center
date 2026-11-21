@@ -687,7 +687,7 @@ function componentsFor(ctx) {
 async function listComponents(ctx, input) {
   const service = componentsFor(ctx)
   if (!service) return { supported: false, reason: 'pluginManager is not mounted', packages: [], skipped: [] }
-  return service.list({ force: input?.force === true })
+  return service.list({ force: input?.force === true, check: input?.check !== false })
 }
 
 async function updateComponent(ctx, input) {

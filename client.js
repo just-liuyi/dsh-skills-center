@@ -1,4 +1,4 @@
-/*! @local/dsh-skills-center 1.9.5 client half: the 技能中心 sidebar entry and the management panel. */
+/*! @local/dsh-skills-center 1.9.6 client half: the 技能中心 sidebar entry and the management panel. */
 window.__ModuleLoader__.load({
   id: '@local/dsh-skills-center',
   factory: (require) => {
@@ -149,7 +149,7 @@ window.__ModuleLoader__.load({
           hint: '检查本机通过 npm 安装的组件在 registry 上的最新版本，并可一键更新。git、本地链接等来源没有可比对的版本。',
           check: '检查更新', checking: '正在检查…', updateAll: '全部更新', update: '更新', updating: '更新中…',
           installed: '已安装', latest: '最新', upToDate: '已是最新', available: '可更新', failed: '检查失败', prerelease: '预发布', disabled: '已停用',
-          neverChecked: '尚未检查', lastChecked: '上次检查', empty: '没有通过 npm 安装的组件。', allCurrent: '所有 npm 组件都是最新版本。',
+          neverChecked: '尚未检查', pendingCheck: '待检查', lastChecked: '上次检查', empty: '没有通过 npm 安装的组件。', allCurrent: '所有 npm 组件都是最新版本。',
           skippedTitle: '不支持自动更新的组件', skippedHint: '这些组件不是从 npm 安装的，无法按版本号比较：',
           reasonGit: 'git 来源', reasonLink: '本地链接', reasonFile: '本地文件', reasonUrl: '网址/压缩包', reasonAlias: 'npm 别名', reasonOther: '来源未知',
           updated: '已更新，重启 DeepSeek Harness 后加载新代码。', updatedOff: '已更新；该组件原本停用，仍保持停用。',
@@ -295,7 +295,7 @@ window.__ModuleLoader__.load({
           hint: 'Check every component installed from npm against its newest registry release and update it in one click. Git, local links and other sources have no comparable version.',
           check: 'Check for updates', checking: 'Checking…', updateAll: 'Update all', update: 'Update', updating: 'Updating…',
           installed: 'Installed', latest: 'Latest', upToDate: 'Up to date', available: 'Update available', failed: 'Check failed', prerelease: 'Prerelease', disabled: 'Disabled',
-          neverChecked: 'Never checked', lastChecked: 'Last checked', empty: 'No component was installed from npm.', allCurrent: 'Every npm component is up to date.',
+          neverChecked: 'Never checked', pendingCheck: 'Not checked yet', lastChecked: 'Last checked', empty: 'No component was installed from npm.', allCurrent: 'Every npm component is up to date.',
           skippedTitle: 'Components without automatic updates', skippedHint: 'These were not installed from npm, so there is no version to compare:',
           reasonGit: 'git source', reasonLink: 'local link', reasonFile: 'local file', reasonUrl: 'URL / tarball', reasonAlias: 'npm alias', reasonOther: 'unknown source',
           updated: 'Updated. The new code loads after DeepSeek Harness restarts.', updatedOff: 'Updated. The component was disabled and stays disabled.',
@@ -803,7 +803,7 @@ window.__ModuleLoader__.load({
       var toolState = React.useState(null)
       var toolDetail = toolState[0], setToolDetail = toolState[1]
       // npm components: loaded lazily when the tab is opened, because the check reaches the registry.
-      var compState = React.useState({ phase: 'idle', loading: false, packages: [], skipped: [], error: null, at: null, supported: true, reason: null, running: null, notices: {} })
+      var compState = React.useState({ phase: 'idle', loading: false, checking: false, checked: false, packages: [], skipped: [], error: null, at: null, supported: true, reason: null, running: null, notices: {} })
       var comp = compState[0], setComp = compState[1]
 
       var lockRef = React.useRef(false)
@@ -842,28 +842,50 @@ window.__ModuleLoader__.load({
 
       React.useEffect(function () { load(false) }, [load])
 
-      var loadComponents = React.useCallback(async function (force) {
+      /**
+       * `check: false` only reads the installed inventory (fast, no network), so the
+       * list is visible immediately; the registry pass then fills in versions.
+       */
+      var loadComponents = React.useCallback(async function (options) {
+        var opts = options || {}
+        var check = opts.check !== false
         var request = ++compRequestRef.current
-        setComp(function (prev) { return Object.assign({}, prev, { loading: true, error: null }) })
+        setComp(function (prev) {
+          return Object.assign({}, prev, check ? { checking: true, error: null } : { loading: true, error: null })
+        })
         try {
-          var value = await call('component.list', { force: force === true })
+          var value = await call('component.list', { force: opts.force === true, check: check })
           if (!aliveRef.current || request !== compRequestRef.current) return
           setComp(function (prev) {
             // Keep per-row outcome notes: a reload follows every update and must not erase its own result.
-            return { phase: 'ready', loading: false, packages: value.packages || [], skipped: value.skipped || [], at: value.at || null, supported: value.supported !== false, reason: value.reason || null, running: null, notices: prev.notices || {} }
+            return {
+              phase: 'ready',
+              loading: false,
+              checking: false,
+              checked: value.checked !== false,
+              packages: value.packages || [],
+              skipped: value.skipped || [],
+              at: value.at || (value.checked === false ? prev.at : null),
+              supported: value.supported !== false,
+              reason: value.reason || null,
+              running: null,
+              notices: prev.notices || {},
+            }
           })
         } catch (error) {
           if (!aliveRef.current || request !== compRequestRef.current) return
-          setComp(function (prev) { return Object.assign({}, prev, { loading: false, phase: 'error', error: String((error && error.message) || error) }) })
+          setComp(function (prev) { return Object.assign({}, prev, { loading: false, checking: false, phase: 'error', error: String((error && error.message) || error) }) })
         }
       }, [])
 
-      // The registry is only read once the user opens the tab, and never again on its own.
+      // Opening the tab paints the inventory first and looks for updates afterwards.
       React.useEffect(function () {
         if (tab !== 'components') return
-        if (comp.phase !== 'idle' || comp.loading) return
-        loadComponents(false)
-      }, [tab, comp.phase, comp.loading, loadComponents])
+        if (comp.phase !== 'idle') return
+        loadComponents({ check: false }).then(function () {
+          if (aliveRef.current) loadComponents({ check: true })
+        })
+      }, [tab, comp.phase, loadComponents])
 
       // `/` focuses the search box, the way host lists do.
       React.useEffect(function () {
@@ -1212,7 +1234,7 @@ window.__ModuleLoader__.load({
         } else if (outcome === 'busy') {
           componentNotice(name, { kind: 'error', text: text.busyWrite })
         }
-        await loadComponents(true)
+        await loadComponents({ force: true })
         return outcome
       }
 
@@ -1566,13 +1588,16 @@ window.__ModuleLoader__.load({
         var c = text.components
         var busy = comp.running === row.name
         var notice = comp.notices[row.name]
+        var checked = comp.checked !== false
         var tags = []
-        if (row.error) tags.push(h(Tag, { key: 'err', tone: 'error' }, c.failed))
+        if (!checked) tags.push(h(Tag, { key: 'wait', tone: 'quiet' }, c.pendingCheck))
+        else if (row.error) tags.push(h(Tag, { key: 'err', tone: 'error' }, c.failed))
         else if (row.updateAvailable) tags.push(h(Tag, { key: 'up', tone: 'ok' }, c.available))
         else tags.push(h(Tag, { key: 'ok', tone: 'quiet' }, c.upToDate))
-        if (row.latest && row.stable === false) tags.push(h(Tag, { key: 'pre', tone: 'quiet' }, c.prerelease))
+        if (checked && row.latest && row.stable === false) tags.push(h(Tag, { key: 'pre', tone: 'quiet' }, c.prerelease))
         if (row.enabled === false) tags.push(h(Tag, { key: 'off', tone: 'quiet' }, c.disabled))
-        var versions = c.installed + ' ' + (row.installed || '—') + ' · ' + c.latest + ' ' + (row.latest || (row.error ? '—' : '…'))
+        var versions = c.installed + ' ' + (row.installed || '—')
+        if (checked) versions += ' · ' + c.latest + ' ' + (row.latest || (row.error ? '—' : '…'))
         return h('li', { key: row.name, className: 'sw-row sw-comp-row', 'data-pending': busy ? 'true' : undefined },
           h('span', { className: 'sw-row-icon' }, h(Icon, { name: 'plug', size: 18 })),
           h('div', { className: 'sw-row-main' },
@@ -1580,31 +1605,33 @@ window.__ModuleLoader__.load({
               h('span', { className: 'sw-row-name sw-mono' }, row.name), tags),
             row.description ? h('p', { className: 'sw-row-desc' }, row.description) : null,
             h('p', { className: 'sw-comp-versions sw-mono' }, versions),
-            row.error ? h('p', { className: 'sw-comp-note sw-comp-note-error' }, c.failed + ': ' + row.error) : null,
+            checked && row.error ? h('p', { className: 'sw-comp-note sw-comp-note-error' }, c.failed + ': ' + row.error) : null,
             busy ? h('p', { className: 'sw-comp-note' }, c.updating) : null,
             notice ? h('p', { className: 'sw-comp-note sw-comp-note-' + notice.kind, role: notice.kind === 'error' ? 'alert' : 'status' }, notice.text) : null),
           h('div', { className: 'sw-row-end' },
             h('div', { className: 'sw-row-actions' },
-              h(Button, { variant: row.updateAvailable ? 'primary' : null, icon: 'refresh',
-                disabled: writing || !row.updateAvailable || Boolean(row.error),
+              h(Button, { variant: checked && row.updateAvailable ? 'primary' : null, icon: 'refresh',
+                disabled: writing || !checked || !row.updateAvailable || Boolean(row.error),
                 onClick: function () { updateComponent(row.name) } }, busy ? c.updating : c.update))))
       }
 
       function renderComponents() {
         var c = text.components
         if (!comp.supported) return h(EmptyState, { icon: 'warn', title: c.skippedTitle, text: c.unsupported })
+        var checked = comp.checked !== false
         var pending = comp.packages.filter(function (row) { return row.updateAvailable }).length
+        var meta = comp.checking || comp.loading ? c.checking : checked ? c.lastChecked + ' · ' + componentClock(comp.at) : c.notChecked
         return h('div', { className: 'sw-components' },
           h('div', { className: 'sw-comp-head' },
             h('div', { className: 'sw-comp-toolbar' },
-              h(Button, { icon: 'refresh', disabled: comp.loading || writing, onClick: function () { loadComponents(true) } },
-                comp.loading ? c.checking : c.check),
-              h(Button, { variant: pending ? 'primary' : null, icon: 'refresh', disabled: comp.loading || writing || !pending, onClick: updateAllComponents },
+              h(Button, { icon: 'refresh', disabled: comp.loading || writing, onClick: function () { loadComponents({ force: true }) } },
+                comp.checking || comp.loading ? c.checking : c.check),
+              h(Button, { variant: pending ? 'primary' : null, icon: 'refresh', disabled: comp.checking || comp.loading || writing || !checked || !pending, onClick: updateAllComponents },
                 c.updateAll + (pending ? ' (' + pending + ')' : ''))),
-            h('span', { className: 'sw-comp-meta' }, c.lastChecked + ' · ' + componentClock(comp.at))),
+            h('span', { className: 'sw-comp-meta', role: 'status', 'aria-live': 'polite' }, meta)),
           h('p', { className: 'sw-group-hint' }, c.hint),
           comp.error ? h('div', { className: 'sw-banner sw-source-error', role: 'alert' }, h(Icon, { name: 'warn' }), h('span', null, comp.error),
-            h(Button, { disabled: comp.loading || writing, onClick: function () { loadComponents(true) } }, text.retry)) : null,
+            h(Button, { disabled: comp.loading || writing, onClick: function () { loadComponents({ force: true }) } }, text.retry)) : null,
           comp.loading && !comp.packages.length ? h(SkeletonRows) : null,
           !comp.loading && comp.phase === 'ready' && !comp.packages.length
             ? h(EmptyState, { icon: 'plug', title: c.empty, text: c.footer })
@@ -1612,7 +1639,7 @@ window.__ModuleLoader__.load({
           comp.packages.length
             ? h('ul', { className: 'sw-rows' }, comp.packages.map(renderComponentRow))
             : null,
-          comp.phase === 'ready' && comp.packages.length && !pending
+          checked && comp.phase === 'ready' && comp.packages.length && !pending
             ? h('p', { className: 'sw-comp-note sw-comp-note-ok' }, c.allCurrent)
             : null,
           comp.skipped.length
@@ -1913,7 +1940,7 @@ window.__ModuleLoader__.load({
             h(IconButton, {
               icon: 'refresh', label: tab === 'components' ? text.components.check : text.refresh,
               disabled: state.phase === 'loading' || writing || (tab === 'components' && comp.loading),
-              onClick: function () { if (tab === 'components') loadComponents(true); else load(false) },
+              onClick: function () { if (tab === 'components') loadComponents({ force: true }); else load(false) },
             }),
             canCreate ? h(Button, {
               variant: 'primary', icon: 'plus', disabled: writing, title: tab === 'skills' ? text.online.addHint : text.addHint[tab],

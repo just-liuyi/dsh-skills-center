@@ -175,3 +175,20 @@ test('update refuses when the host cannot update bundles', async () => {
   const service = createComponents({ manager: { async listBundles() { return [bundle('alpha')] } }, doFetch: registryFetch({ alpha: answer('alpha', NEWER) }).doFetch })
   await assert.rejects(service.update({ name: 'alpha' }), /不支持按版本更新组件/)
 })
+
+test('an unchecked listing returns the inventory without touching any registry', async () => {
+  const manager = { async listBundles() { return [bundle('alpha'), bundle('gamma', { source: 'link:C:/g' })] } }
+  let calls = 0
+  const service = createComponents({ manager, doFetch: async () => { calls++; throw new Error('registry must not be called') } })
+  const report = await service.list({ check: false })
+  assert.equal(report.checked, false)
+  assert.equal(report.at, null)
+  assert.equal(calls, 0)
+  assert.deepEqual(report.packages.map((item) => [item.name, item.installed]), [['alpha', CURRENT]])
+  assert.equal(report.packages[0].latest, undefined)
+  assert.equal(report.packages[0].updateAvailable, undefined)
+  assert.deepEqual(report.skipped.map((item) => item.name), ['gamma'])
+  const checked = await createComponents({ manager, doFetch: async () => ({ status: 200, ok: true, async json() { return { name: 'alpha', 'dist-tags': { latest: CURRENT } } } }) }).list()
+  assert.equal(checked.checked, true)
+  assert.equal(checked.packages[0].updateAvailable, false)
+})

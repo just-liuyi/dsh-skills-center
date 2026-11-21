@@ -169,13 +169,19 @@ export function createComponents({ manager, doFetch = (...args) => globalThis.fe
     return value
   }
 
-  async function list({ force = false } = {}) {
+  /**
+   * `check: false` returns the installed inventory only — no registry traffic, so the
+   * panel can paint the list first and look for updates afterwards.
+   */
+  async function list({ force = false, check = true } = {}) {
     if (typeof manager?.listBundles !== 'function') return { supported: false, reason: 'pluginManager is not mounted', packages: [], skipped: [] }
     const bundles = await manager.listBundles()
     const { packages, skipped } = candidatesOf(bundles)
+    if (!check) return { supported: true, checked: false, at: null, packages, skipped }
     const answers = await mapLimit(packages, CONCURRENCY, (target) => latestFor(target.name, force))
     return {
       supported: true,
+      checked: true,
       at: new Date().toISOString(),
       packages: packages.map((target, index) => {
         const answer = answers[index] || {}
