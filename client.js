@@ -1,4 +1,4 @@
-/*! @local/dsh-skills-center 1.9.4 client half: the 技能中心 sidebar entry and the management panel. */
+/*! @local/dsh-skills-center 1.9.5 client half: the 技能中心 sidebar entry and the management panel. */
 window.__ModuleLoader__.load({
   id: '@local/dsh-skills-center',
   factory: (require) => {
@@ -2130,8 +2130,8 @@ window.__ModuleLoader__.load({
       '@keyframes sw-pop{from{transform:scale(.97);opacity:0}}',
 
       // drawer — a docked sheet: panel surface, left border, slides in like the host's own sidebar
-      '.sw-drawer-layer{padding:var(--dsh-frame-top-clearance,0px) 0 0;align-items:stretch;animation:sw-fade .2s ease-out;background:color-mix(in srgb,var(--dsw-alias-bg-mask-1,rgba(0,0,0,.36)) 55%,transparent);}',
-      '.sw-drawer{display:flex;flex-direction:column;width:min(560px,100%);height:100%;overflow:hidden;background:var(--dsw-alias-bg-overlay,var(--dsw-alias-bg-layer-1));border:0;border-left:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-panel,14px) 0 0 var(--dsw-radius-panel,14px);box-shadow:var(--dsw-elevation-prominent,var(--dsw-shadow-lv3,-16px 0 40px rgba(0,0,0,.16)));animation:sw-drawer-slide .26s cubic-bezier(.22,1,.36,1);}',
+      '.sw-drawer-layer{padding:var(--dsh-frame-top-clearance,0px) 0 0;align-items:stretch;animation:sw-fade .2s ease-out;background:color-mix(in srgb,var(--dsw-alias-bg-mask-1,rgba(0,0,0,.36)) 30%,transparent);}',
+      '.sw-drawer{display:flex;flex-direction:column;width:min(560px,100%);height:100%;overflow:hidden;background:var(--dsw-alias-bg-layer-1,var(--dsw-alias-bg-base));border:0;border-left:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-panel,14px) 0 0 var(--dsw-radius-panel,14px);box-shadow:var(--dsw-elevation-prominent,var(--dsw-shadow-lv3,-16px 0 40px rgba(0,0,0,.16)));animation:sw-drawer-slide .26s cubic-bezier(.22,1,.36,1);}',
       '.sw-drawer-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:14px 18px 13px;border-bottom:.5px solid var(--dsw-alias-border-l2);}',
       '.sw-drawer-dismiss{height:28px;padding:0 10px;font-size:12px;color:var(--dsw-alias-label-secondary);background:transparent;}',
       '.sw-drawer-dismiss:hover:not(:disabled){color:var(--dsw-alias-label-primary);}',
