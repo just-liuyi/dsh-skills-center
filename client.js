@@ -1,4 +1,4 @@
-/*! @local/dsh-skills-center 1.9.2 client half: the 技能中心 sidebar entry and the management panel. */
+/*! @local/dsh-skills-center 1.9.3 client half: the 技能中心 sidebar entry and the management panel. */
 window.__ModuleLoader__.load({
   id: '@local/dsh-skills-center',
   factory: (require) => {
@@ -573,9 +573,11 @@ window.__ModuleLoader__.load({
               props.note ? h('p', { className: 'sw-drawer-note' }, props.note) : null)),
           props.banner,
           h('div', { className: 'sw-drawer-body', ref: bodyRef }, props.children),
-          h('footer', { className: 'sw-drawer-foot' },
-            h('span', { className: 'sw-drawer-hint' }, props.footHint || ''),
-            props.footer)))
+          props.footer && props.footer.length
+            ? h('footer', { className: 'sw-drawer-foot' },
+              h('span', { className: 'sw-drawer-hint' }, props.footHint || ''),
+              props.footer)
+            : null))
     }
 
     function Dialog(props) {
@@ -1725,8 +1727,9 @@ window.__ModuleLoader__.load({
               ? h('div', { className: 'sw-banner' }, h(Icon, { name: 'refresh' }), h('span', null, text.reloadHint))
               : null,
           footHint: draft.readOnly ? '' : text.saveShortcut,
+          // A read-only drawer is closed by its header control; a second footer close would duplicate it.
           footer: draft.readOnly
-            ? [h(Button, { key: 'close', onClick: function () { setDraft(null) } }, text.close)]
+            ? null
             : [
               canDelete ? h(Button, {
                 key: 'del', variant: 'danger-ghost', icon: 'trash', disabled: saving,
@@ -1895,7 +1898,6 @@ window.__ModuleLoader__.load({
         title: text.tabs.tools, subtitle: toolDetail.name, icon: 'plug', closeLabel: text.close,
         onClose: function () { setToolDetail(null) },
         banner: h('div', { className: 'sw-banner' }, h(Icon, { name: 'lock' }), h('span', null, text.readOnlyNote)),
-        footer: [h(Button, { key: 'close', onClick: function () { setToolDetail(null) } }, text.close)],
       }, h('p', { className: 'sw-tool-description' }, toolDetail.description || ''),
         toolDetail.inputSchema || toolDetail.parameters || toolDetail.schema
           ? h('pre', { className: 'sw-tool-schema sw-mono' }, JSON.stringify(toolDetail.inputSchema || toolDetail.parameters || toolDetail.schema, null, 2)) : null) : null
@@ -2126,11 +2128,11 @@ window.__ModuleLoader__.load({
       '@keyframes sw-drawer-slide{from{transform:translateX(calc(100% + 24px))}}',
       '@keyframes sw-pop{from{transform:scale(.97);opacity:0}}',
 
-      // drawer — a floating card that shares the panel's border, radius and surface
-      '.sw-drawer-layer{padding:calc(16px + var(--dsh-frame-top-clearance,0px)) 16px 16px;align-items:stretch;animation:sw-fade .2s ease-out;}',
-      '.sw-drawer{display:flex;flex-direction:column;width:min(560px,100%);height:100%;overflow:hidden;background:var(--dsw-alias-bg-layer-1);border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-panel,14px);box-shadow:var(--dsw-elevation-panel,var(--dsw-shadow-lv3,0 12px 32px rgba(0,0,0,.18)));animation:sw-drawer-slide .3s cubic-bezier(.22,1,.36,1);}',
-      '.sw-drawer-head{display:flex;flex-wrap:wrap;align-items:flex-start;gap:6px 14px;padding:14px 18px 13px;border-bottom:.5px solid var(--dsw-alias-border-l2);}',
-      '.sw-drawer-dismiss{height:28px;padding:0 10px;font-size:12px;color:var(--dsw-alias-label-secondary);}',
+      // drawer — a docked sheet: panel surface, left border, slides in like the host's own sidebar
+      '.sw-drawer-layer{padding:var(--dsh-frame-top-clearance,0px) 0 0;align-items:stretch;animation:sw-fade .2s ease-out;background:color-mix(in srgb,var(--dsw-alias-bg-mask-1,rgba(0,0,0,.36)) 55%,transparent);}',
+      '.sw-drawer{display:flex;flex-direction:column;width:min(560px,100%);height:100%;overflow:hidden;background:var(--dsw-alias-bg-overlay,var(--dsw-alias-bg-layer-1));border:0;border-left:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-panel,14px) 0 0 var(--dsw-radius-panel,14px);box-shadow:var(--dsw-elevation-prominent,var(--dsw-shadow-lv3,-16px 0 40px rgba(0,0,0,.16)));animation:sw-drawer-slide .26s cubic-bezier(.22,1,.36,1);}',
+      '.sw-drawer-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:14px 18px 13px;border-bottom:.5px solid var(--dsw-alias-border-l2);}',
+      '.sw-drawer-dismiss{height:28px;padding:0 10px;font-size:12px;color:var(--dsw-alias-label-secondary);background:transparent;}',
       '.sw-drawer-dismiss:hover:not(:disabled){color:var(--dsw-alias-label-primary);}',
       '.sw-drawer-heading{flex:1;min-width:0;}',
       '.sw-drawer-title{margin:0;font-size:16px;font-weight:500;line-height:24px;}',
@@ -2138,10 +2140,10 @@ window.__ModuleLoader__.load({
       '.sw-drawer-note{margin:4px 0 0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary);}',
       '.sw-drawer>.sw-banner{margin:12px 18px 0;}',
       '.sw-drawer-body{flex:1;overflow:auto;display:flex;flex-direction:column;gap:16px;padding:16px 18px 20px;overscroll-behavior:contain;}',
-      '.sw-drawer-foot{display:flex;align-items:center;gap:8px;padding:12px 18px;border-top:.5px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);}',
-      '.sw-drawer-hint{flex:none;font-size:11px;color:var(--dsw-alias-label-tertiary);}',
+      '.sw-drawer-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px;row-gap:8px;padding:12px 18px;border-top:.5px solid var(--dsw-alias-border-l2);background:inherit;}',
+      '.sw-drawer-hint{flex:none;font-size:12px;color:var(--dsw-alias-label-tertiary);margin-right:auto;}',
       '.sw-drawer-foot .sw-grow{flex:1;}',
-      '@media(max-width:640px){.sw-drawer-layer{padding:0;}.sw-drawer{width:100%;height:100%;border:0;border-left:.5px solid var(--dsw-alias-border-l2);border-radius:0;}}',
+      '@media(max-width:640px){.sw-drawer-layer{padding:var(--dsh-frame-top-clearance,0px) 0 0;}.sw-drawer{width:100%;height:100%;border-radius:0;}}',
 
       // dialog
       '.sw-dialog{width:min(420px,100vw - 32px);padding:20px;border-radius:var(--dsw-radius-panel,14px);background:var(--dsw-alias-bg-overlay,var(--dsw-alias-bg-layer-1));border:.5px solid var(--dsw-alias-border-l2);box-shadow:var(--dsw-elevation-prominent,var(--dsw-shadow-lv3,0 18px 48px rgba(0,0,0,.28)));animation:sw-pop .14s ease-out;}',
@@ -2236,6 +2238,8 @@ window.__ModuleLoader__.load({
       '.sw-source-choice-description{font-size:13px;line-height:20px;color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere;}',
       '.sw-source-choice-warning{font-size:12px;line-height:18px;color:var(--dsw-alias-state-warn-label,var(--dsw-alias-state-warn-primary));overflow-wrap:anywhere;}',
       '.sw-page>.sw-layer{max-width:none;}',
+      // A fixed overlay must not let the wheel scroll the list behind it.
+      '.sw-page:has(>.sw-layer){overflow:hidden;}',
       '.sw-tool-description{margin:0;font-size:14px;line-height:22px;white-space:pre-wrap;overflow-wrap:anywhere;}',
       '.sw-tool-schema{margin:0;font-size:12px;line-height:20px;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--dsw-alias-label-secondary);}',
       '@media(max-width:680px){.sw-online-rows .sw-row{flex-wrap:wrap;}.sw-online-rows .sw-row-main{flex-basis:calc(100% - 60px);}.sw-online-rows .sw-row-end{margin-left:54px;flex:1;justify-content:flex-end;}.sw-source-summary{flex-basis:100%;padding-left:24px;}.sw-page{padding-left:20px;padding-right:20px;}.sw-source{padding:12px;}}',
