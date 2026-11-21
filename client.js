@@ -1,4 +1,4 @@
-/*! @local/dsh-skills-center 1.9.1 client half: the 技能中心 sidebar entry and the management panel. */
+/*! @local/dsh-skills-center 1.9.2 client half: the 技能中心 sidebar entry and the management panel. */
 window.__ModuleLoader__.load({
   id: '@local/dsh-skills-center',
   factory: (require) => {
@@ -2123,15 +2123,15 @@ window.__ModuleLoader__.load({
       '.sw-layer{position:fixed;inset:0;z-index:80;display:flex;justify-content:flex-end;background:var(--dsw-alias-bg-mask-1,rgba(0,0,0,.36));animation:sw-fade .14s ease-out;overscroll-behavior:contain;}',
       '.sw-layer-center{justify-content:center;align-items:center;padding:24px;}',
       '@keyframes sw-fade{from{opacity:0}}',
-      '@keyframes sw-drawer-in{from{transform:translateY(6px) translateX(10px);opacity:.55}}',
+      '@keyframes sw-drawer-slide{from{transform:translateX(calc(100% + 24px))}}',
       '@keyframes sw-pop{from{transform:scale(.97);opacity:0}}',
 
       // drawer — a floating card that shares the panel's border, radius and surface
-      '.sw-drawer-layer{padding:calc(16px + var(--dsh-frame-top-clearance,0px)) 16px 16px;align-items:stretch;}',
-      '.sw-drawer{display:flex;flex-direction:column;width:min(560px,100%);height:100%;overflow:hidden;background:var(--dsw-alias-bg-layer-1);border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-panel,14px);box-shadow:var(--dsw-elevation-panel,var(--dsw-shadow-lv3,0 12px 32px rgba(0,0,0,.18)));animation:sw-drawer-in .2s cubic-bezier(.2,.8,.2,1);}',
+      '.sw-drawer-layer{padding:calc(16px + var(--dsh-frame-top-clearance,0px)) 16px 16px;align-items:stretch;animation:sw-fade .2s ease-out;}',
+      '.sw-drawer{display:flex;flex-direction:column;width:min(560px,100%);height:100%;overflow:hidden;background:var(--dsw-alias-bg-layer-1);border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-panel,14px);box-shadow:var(--dsw-elevation-panel,var(--dsw-shadow-lv3,0 12px 32px rgba(0,0,0,.18)));animation:sw-drawer-slide .3s cubic-bezier(.22,1,.36,1);}',
       '.sw-drawer-head{display:flex;flex-wrap:wrap;align-items:flex-start;gap:6px 14px;padding:14px 18px 13px;border-bottom:.5px solid var(--dsw-alias-border-l2);}',
-      '.sw-drawer-dismiss{height:28px;padding:0 8px;border-color:transparent;background:none;color:var(--dsw-alias-label-secondary);font-size:12px;}',
-      '.sw-drawer-dismiss:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary);}',
+      '.sw-drawer-dismiss{height:28px;padding:0 10px;font-size:12px;color:var(--dsw-alias-label-secondary);}',
+      '.sw-drawer-dismiss:hover:not(:disabled){color:var(--dsw-alias-label-primary);}',
       '.sw-drawer-heading{flex:1;min-width:0;}',
       '.sw-drawer-title{margin:0;font-size:16px;font-weight:500;line-height:24px;}',
       '.sw-drawer-sub{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary);font-family:var(--dsw-font-mono,ui-monospace,monospace);}',
